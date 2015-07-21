@@ -9,7 +9,7 @@
 #define _REMOTE_DATA_HANDLER_H_
 
 #include <Python.h>
-
+#include <vector>
 #ifdef WIN32
 #include <windows.h>
 #include <process.h>
@@ -34,6 +34,10 @@ public:
   bool canHaveExclusiveControl() const { return canHaveExclusiveControl_; }
 
   int robotID() const { return robotID_; }
+
+  int getCameraList( std::vector<std::string> & camlabels );
+  int activeCamera() const { return activeCam_; }
+  bool activeCamera( int camid );
 
 protected:
   void onRobotCreated( const char cID, const int ipAddr, const RobotInfo * rinfo,
@@ -60,6 +64,9 @@ private:
   pthread_t runThread_;
 #endif
   int robotID_;
+  int activeCam_;
+  int pendingCam_;
+  std::vector<std::string> cameraLabels_;
   bool isTelemetryOn_;
   bool hasExclusiveControl_;
   bool canHaveExclusiveControl_;

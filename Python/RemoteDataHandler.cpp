@@ -26,6 +26,8 @@ PyRideRemoteDataHandler::PyRideRemoteDataHandler( PyObject * pyModule ) :
   runThread_( (pthread_t)NULL ),
 #endif
   robotID_( -1 ),
+  activeCam_( -1 ),
+  pendingCam_( -1 ),
   isTelemetryOn_( false ),
   hasExclusiveControl_( false ),
   canHaveExclusiveControl_( false ),
@@ -64,7 +66,20 @@ void PyRideRemoteDataHandler::onRobotCreated( const char cID, const int ipAddr, 
   }
 
   canHaveExclusiveControl_ = (rinfo->status == NORMAL_CONTROL);
-  
+
+  cameraLabels_.clear();
+  activeCam_ = -1;
+
+  if (rinfo->nofcams > 0) {
+    unsigned char * dataPtr = (unsigned char *)optLabel;
+    for (int i = 0; i < rinfo->nofcams; ++i) {
+      int length = (int)*dataPtr & 0xff; dataPtr++;
+      cameraLabels_.push_back( std::string( (char *)dataPtr, length ) );
+      dataPtr += length;
+    }
+    activeCam_ = 0;
+  }
+
   if (finalShutdown_)
     return;
 
@@ -73,7 +88,7 @@ void PyRideRemoteDataHandler::onRobotCreated( const char cID, const int ipAddr, 
   
   PyObject * arg = Py_BuildValue( "(i)", rinfo->type );
 
-  this->invokeCallback( "onTiNLogon", arg );
+  this->invokeCallback( "onRobotConnected", arg );
   
   Py_DECREF( arg );
   
@@ -90,13 +105,16 @@ void PyRideRemoteDataHandler::onRobotDestroyed( const char cID )
 
   robotID_ = -1;
   
+  cameraLabels_.clear();
+  activeCam_ = -1;
+
   if (finalShutdown_)
     return;
   
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   
-  this->invokeCallback( "onTiNLogoff", NULL );
+  this->invokeCallback( "onRobotDisconnected", NULL );
   
   PyGILState_Release( gstate );
 }
@@ -118,7 +136,7 @@ void PyRideRemoteDataHandler::onTelemetryStreamControl( bool isStart )
   
   PyObject * arg = Py_BuildValue( "(O)", isStart ? Py_True : Py_False );
   
-  this->invokeCallback( "onTiNTelemetryStatus", arg );
+  this->invokeCallback( "onRobotTelemetryStatus", arg );
   
   Py_DECREF( arg );
   
@@ -134,6 +152,10 @@ void PyRideRemoteDataHandler::onVideoStreamControl( bool isStart, const char cID
 
 void PyRideRemoteDataHandler::onVideoStreamSwitch( const char cID, const VideoSettings * vsettings )
 {
+  if (cID != robotID_)
+    return;
+
+
 }
 
 void PyRideRemoteDataHandler::onOperationalData( const char cID, const int status,
@@ -143,8 +165,7 @@ void PyRideRemoteDataHandler::onOperationalData( const char cID, const int statu
   if (robotID_ != cID)
     return;
 
-  switch (status)
-  {
+  switch (status) {
     case CUSTOM_STATE:
     {
       if (optionalData && optionalDataLength > 0) {
@@ -158,7 +179,7 @@ void PyRideRemoteDataHandler::onOperationalData( const char cID, const int statu
 
           PyObject * arg = Py_BuildValue( "(s)", data );
 
-          this->invokeCallback( "onTiNOperationData", arg );
+          this->invokeCallback( "onRobotOperationData", arg );
 
           Py_DECREF( arg );
 
@@ -183,7 +204,7 @@ void PyRideRemoteDataHandler::onOperationalData( const char cID, const int statu
         PyGILState_STATE gstate;
         gstate = PyGILState_Ensure();
       
-        this->invokeCallback( "onTiNControlOverride", NULL );
+        this->invokeCallback( "onRobotControlOverride", NULL );
       
         PyGILState_Release( gstate );
       }
@@ -227,7 +248,7 @@ void PyRideRemoteDataHandler::onExtendedCommandResponse( const char cID, const P
       
       PyObject * arg = Py_BuildValue( "(O)", hasExclusiveControl_ ? Py_True : Py_False );
       
-      this->invokeCallback( "onTiNControlStatus", arg );
+      this->invokeCallback( "onRobotControlStatus", arg );
       
       Py_DECREF( arg );
       
@@ -235,7 +256,21 @@ void PyRideRemoteDataHandler::onExtendedCommandResponse( const char cID, const P
     }
   }
 }
+
+int PyRideRemoteDataHandler::getCameraList( std::vector<std::string> & camlabels )
+{
+  camlabels = cameraLabels_;
+  return (int)camlabels.size();
+}
+
+bool PyRideRemoteDataHandler::activeCamera( int camid )
+{
+  if (camid < 0 || camid >= cameraLabels_.size())
+    return false;
+
+  ConsoleDataProcessor::instance()->switchCamera( robotID_, camid );
   
+}
 void PyRideRemoteDataHandler::invokeCallback( const char * fnName, PyObject * arg )
 {
   if (!pPyModule_)

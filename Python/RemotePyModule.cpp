@@ -176,13 +176,58 @@ static PyObject * PyModule_ReleaseExclusiveControl( PyObject *self )
   Py_RETURN_NONE;
 }
 
+static PyObject * PyModule_ListRobotCameras( PyObject *self )
+{
+  if (!s_datahandler->isConnected()) {
+    PyErr_Format( PyExc_StandardError, "pyride_remote: we are not connected to a robot." );
+    return NULL;
+  }
+  std::vector<std::string> cams;
+
+  s_datahandler->getCameraList( cams );
+
+  int fsize = (int)cams.size();
+  PyObject * retObj = PyList_New( fsize );
+  for (int i = 0; i < fsize; ++i) {
+    PyList_SetItem( retObj, i, PyString_FromString( cams[i].c_str() ) );
+  }
+  return retObj;
+
+  Py_RETURN_NONE;
+}
+
+static PyObject * PyModule_GetSetActiveCamera( PyObject *self, PyObject * args )
+{
+  int active_cam = -1;
+
+  if (!s_datahandler->isConnected()) {
+    PyErr_Format( PyExc_StandardError, "pyride_remote: we are not connected to a robot." );
+    return NULL;
+  }
+
+  if (!PyArg_ParseTuple( args, "|i", &active_cam )) {
+    PyErr_Format( PyExc_ValueError, "pyride_remote:active_camera: invalid camera index." );
+    return NULL;
+  }
+
+  if (active_cam == -1) { // get the current active camera
+    return PyInt_FromLong( s_datahandler->activeCamera() );
+  }
+  else if (s_datahandler->activeCamera( active_cam )) {
+    Py_RETURN_TRUE;
+  }
+  else {
+    Py_RETURN_FALSE;
+  }
+}
+
 static PyObject * PyModule_IssueCustomCommand( PyObject *self, PyObject * args )
 {
   int cmdID = -1;
   char * cmdtxt = NULL;
   
   if (!s_datahandler->isConnected()) {
-    PyErr_Format( PyExc_StandardError, "pyride_remote: we have not connected to a robot yet." );
+    PyErr_Format( PyExc_StandardError, "pyride_remote: we are not connected to a robot." );
     return NULL;
   }
   
@@ -206,22 +251,26 @@ static PyMethodDef PyModule_methods[] = {
     "Connect to a robot." },
   { "isconnected", (PyCFunction)PyModule_IsConnected, METH_NOARGS,
     "Check remote robot connection status." },
-  { "tosay", (PyCFunction)PyModule_LetTiNSpeak, METH_VARARGS,
+  { "say", (PyCFunction)PyModule_LetTiNSpeak, METH_VARARGS,
     "Make robot to speak." },
-  { "enabletelemery", (PyCFunction)PyModule_EnableTelemery, METH_NOARGS,
+  { "enable_telemery", (PyCFunction)PyModule_EnableTelemery, METH_NOARGS,
     "Enable robot Telemetry streaming." },
-  { "disabletelemery", (PyCFunction)PyModule_DisableTelemery, METH_NOARGS,
+  { "disable_telemery", (PyCFunction)PyModule_DisableTelemery, METH_NOARGS,
     "Disable robot Telemetry streaming." },
-  { "takecontrol", (PyCFunction)PyModule_TakeExclusiveControl, METH_NOARGS,
+  { "take_control", (PyCFunction)PyModule_TakeExclusiveControl, METH_NOARGS,
     "Take exclusive control of the connected robot." },
-  { "releasecontrol", (PyCFunction)PyModule_ReleaseExclusiveControl, METH_NOARGS,
+  { "release_control", (PyCFunction)PyModule_ReleaseExclusiveControl, METH_NOARGS,
     "Release exclusive control of the connected robot." },
   { "hascontrol", (PyCFunction)PyModule_HasExclusiveControl, METH_NOARGS,
     "Check whether we have exclusive control of robot." },
-  { "issuecommand", (PyCFunction)PyModule_IssueCustomCommand, METH_VARARGS,
+  { "issue_command", (PyCFunction)PyModule_IssueCustomCommand, METH_VARARGS,
     "Send exclusive control command to the robot." },
+  { "camera_list", (PyCFunction)PyModule_ListRobotCameras, METH_NOARGS,
+    "Return a list of cameras on the robot." },
+  { "active_camera", (PyCFunction)PyModule_GetSetActiveCamera, METH_VARARGS,
+    "get (or set) the active camera on the robot." },
   { "disconnect", (PyCFunction)PyModule_disconnect, METH_NOARGS,
-    "Disconnect from a robot." },
+  "Disconnect from a robot." },
   { NULL, NULL, 0, NULL }           /* sentinel */
 };
 

@@ -69,6 +69,7 @@ void PyRideRemoteDataHandler::onRobotCreated( const char cID, const int ipAddr, 
 
   cameraLabels_.clear();
   activeCam_ = -1;
+  pendingCam_ = -1;
 
   if (rinfo->nofcams > 0) {
     unsigned char * dataPtr = (unsigned char *)optLabel;
@@ -155,7 +156,23 @@ void PyRideRemoteDataHandler::onVideoStreamSwitch( const char cID, const VideoSe
   if (cID != robotID_)
     return;
 
+  if (pendingCam_ >= 0) {
+    //vsc_.setVideoSource( NULL, vsettings);
+    if (!finalShutdown_) {
+      PyGILState_STATE gstate;
+      gstate = PyGILState_Ensure();
 
+      PyObject * arg = Py_BuildValue( "(ii)", pendingCam_, activeCam_ );
+
+      this->invokeCallback( "onRobotCameraSwitch", arg );
+
+      Py_DECREF( arg );
+
+      PyGILState_Release( gstate );
+    }
+    activeCam_ = pendingCam_;
+    pendingCam_ = -1;
+  }
 }
 
 void PyRideRemoteDataHandler::onOperationalData( const char cID, const int status,
@@ -268,9 +285,16 @@ bool PyRideRemoteDataHandler::activeCamera( int camid )
   if (camid < 0 || camid >= cameraLabels_.size())
     return false;
 
-  ConsoleDataProcessor::instance()->switchCamera( robotID_, camid );
-  
+  pendingCam_ = camid;
+  ConsoleDataProcessor::instance()->switchCamera( robotID_, pendingCam_ );
+  return true;
 }
+
+void PyRideRemoteDataHandler::onVideoDataInput( const unsigned char * data )
+{
+
+}
+
 void PyRideRemoteDataHandler::invokeCallback( const char * fnName, PyObject * arg )
 {
   if (!pPyModule_)
@@ -294,6 +318,17 @@ void PyRideRemoteDataHandler::invokeCallback( const char * fnName, PyObject * ar
     Py_XDECREF( pResult );
   }
   Py_DECREF( callbackFn );
+}
+
+void PyRideRemoteDataHandler::invokeCallback( PyObject * & cbObj, PyObject * arg )
+{
+  if (cbObj) {
+    PyObject * pResult = PyObject_CallObject( cbObj, arg );
+    if (PyErr_Occurred()) {
+      PyErr_Print();
+    }
+    Py_XDECREF( pResult );
+  }
 }
 
 } // namespace pyride_remote

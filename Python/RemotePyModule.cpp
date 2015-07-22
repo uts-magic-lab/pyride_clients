@@ -221,6 +221,41 @@ static PyObject * PyModule_GetSetActiveCamera( PyObject *self, PyObject * args )
   }
 }
 
+static PyObject * PyModule_PR2RegisterImageData( PyObject * self, PyObject * args )
+{
+  PyObject * callbackFn = NULL;
+  int fps = 1;
+
+  if (!s_datahandler->isConnected()) {
+    PyErr_Format( PyExc_StandardError, "pyride_remote: we are not connected to a robot." );
+    return NULL;
+  }
+
+  if (!PyArg_ParseTuple( args, "O|i", &callbackFn, &fps )) {
+    // PyArg_ParseTuple will set the error status.
+    return NULL;
+  }
+
+  if (callbackFn == Py_None) {
+    PyPR2Module::instance()->setBaseScanCallback( NULL );
+    s_datahandler->deregisterForImageData();
+    Py_RETURN_NONE;
+  }
+
+  if (!PyCallable_Check( callbackFn )) {
+    PyErr_Format( PyExc_ValueError, "First input parameter is not a callable object" );
+    return NULL;
+  }
+
+  PyPR2Module::instance()->setBaseScanCallback( callbackFn );
+
+  if (fps <= 0 || fps >= 30) {
+    PyErr_Format( PyExc_ValueError, "Requested FPS must be within [1,30]." );
+  }
+
+  Py_RETURN_NONE;
+}
+
 static PyObject * PyModule_IssueCustomCommand( PyObject *self, PyObject * args )
 {
   int cmdID = -1;
@@ -269,6 +304,8 @@ static PyMethodDef PyModule_methods[] = {
     "Return a list of cameras on the robot." },
   { "active_camera", (PyCFunction)PyModule_GetSetActiveCamera, METH_VARARGS,
     "get (or set) the active camera on the robot." },
+  { "register_image_data", (PyCFunction)PyModule_RegisterImageData, METH_VARARGS,
+    "Register (or deregister) a callback function to get image data from the active robot camera." },
   { "disconnect", (PyCFunction)PyModule_disconnect, METH_NOARGS,
   "Disconnect from a robot." },
   { NULL, NULL, 0, NULL }           /* sentinel */

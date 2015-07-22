@@ -18,11 +18,12 @@
 #include <string>
 #endif
 
+#include "VideoStreamController.h"
 #include "ConsoleDataProcessor.h"
 
 namespace pyride_remote {
 
-class PyRideRemoteDataHandler : public PyRideConsoleCommandHandler
+class PyRideRemoteDataHandler : public PyRideConsoleCommandHandler, VideoStreamControllerDelegate
 {
 public:
   PyRideRemoteDataHandler( PyObject * pyModule );
@@ -72,9 +73,11 @@ private:
   bool canHaveExclusiveControl_;
   bool finalShutdown_;
   
+  VideoStreamController vsc_;
   PyObject * pPyModule_;
   
   void invokeCallback( const char * fnName, PyObject * arg );
+  void invokeCallback( PyObject * & cbObj, PyObject * arg );
 };
 
 } // namespace pyride_remote

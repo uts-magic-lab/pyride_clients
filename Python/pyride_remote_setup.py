@@ -27,8 +27,9 @@ osname = os.name
 if osname == 'nt':
   macro = macro + [('WIN32', None), ('WIN32_LEAN_AND_MEAN', None), ('NO_WINCOM', None)]
   lib = ['ws2_32', 'Kernel32', 'libeay32', 'advapi32', 'oleaut32', 'user32']
+  lib = lib + ['ccext2', 'ccrtp1', 'ccgnu2', 'turbojpeg' ]
   inc_dirs = ['../Windows/include', '../Common']
-  lib_dirs = ['../Windows/lib/Release']
+  lib_dirs = ['../Windows/lib']
 elif osname == 'posix':
   lib = ['pthread', 'ccext2', 'ccrtp1', 'ccgnu2','crypto', 'jpeg' ]
   #lib = [ 'pthread', 'crypto' ]

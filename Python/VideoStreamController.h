@@ -1,5 +1,10 @@
 #pragma once
+#ifdef WIN32
+#include <windows.h>
+#include <process.h>
+#else
 #include <pthread.h>
+#endif
 #include <stdio.h>
 #include <jpeglib.h>
 #include "RTPDataReceiver.h"

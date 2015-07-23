@@ -1,4 +1,7 @@
+#ifdef WIN32
+#else
 #include <unistd.h>
+#endif
 #include "VideoStreamController.h"
 
 namespace pyride_remote {
@@ -18,7 +21,11 @@ VideoStreamController::VideoStreamController() :
   isStreaming_( false ),
   toDecode_( true ),
   grabWaitTime_( 100000 ), // default to 10FPS
+#ifdef WIN32
+  dataThread_( 0 ),
+#else
   dataThread_( (pthread_t)NULL ),
+#endif
   imageData_( NULL ),
   imageDataSize_( 0 ),
   delegate_( NULL )
@@ -131,10 +138,11 @@ void VideoStreamController::processVideoStream( bool isStart )
 #ifdef WIN32
       WaitForSingleObject( dataThread_, INFINITE );;
       CloseHandle( dataThread_ );
+      dataThread_ = 0;
 #else
       pthread_join( dataThread_, NULL ); // allow thread to exit
-#endif
       dataThread_ = (pthread_t)NULL;
+#endif
     }
   }
 }
@@ -147,7 +155,11 @@ void VideoStreamController::dataThreadProc()
     if (grabVideoStreamData( data, dataSize, toDecode_ ) && delegate_) {
       delegate_->onVideoDataInput( data, dataSize );
     }
+#ifdef WIN32
+    Sleep( grabWaitTime_ * 1E3);
+#else
     ::usleep( grabWaitTime_ );
+#endif
   }
 }
 

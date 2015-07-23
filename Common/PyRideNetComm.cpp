@@ -1513,7 +1513,7 @@ void PyRideNetComm::clientDataSend( const int command, const int subcommand,
 
     if (client) {
 #ifdef WIN32
-      send( client->fd, dispatchDataBuffer_, outputLength, 0 );
+      send( client->fd, (char*)dispatchDataBuffer_, outputLength, 0 );
 #else
       //DEBUG_MSG( "sending total packet size %d, data count %d\n", outputLength, opl );
       write( client->fd, dispatchDataBuffer_, outputLength );
@@ -1524,7 +1524,7 @@ void PyRideNetComm::clientDataSend( const int command, const int subcommand,
       while (cPtr) {
         if (cPtr->fd != INVALID_SOCKET && (forceAll || cPtr->pushData)) {
 #ifdef WIN32
-          send( cPtr->fd, dispatchDataBuffer_, outputLength, 0 );
+          send( cPtr->fd, (char*)dispatchDataBuffer_, outputLength, 0 );
 #else
           write( cPtr->fd, dispatchDataBuffer_, outputLength );
 #endif

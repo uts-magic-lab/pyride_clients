@@ -26,8 +26,9 @@ lib = []
 osname = os.name
 if osname == 'nt':
   macro = macro + [('WIN32', None), ('WIN32_LEAN_AND_MEAN', None), ('NO_WINCOM', None)]
-  lib = ['ws2_32', 'Kernel32', 'libeay32', 'advapi32', 'oleaut32', 'user32']
-  lib = lib + ['ccext2', 'ccrtp1', 'ccgnu2', 'turbojpeg' ]
+  macro = macro + [('CCXX_STATIC', None)]
+  lib = ['ws2_32', 'Kernel32', 'libeay32', 'advapi32', 'oleaut32', 'user32', 'gdi32']
+  lib = lib + ['ccext2', 'ccrtp1', 'ccgnu2', 'jpeg' ]
   inc_dirs = ['../Windows/include', '../Common']
   lib_dirs = ['../Windows/lib']
 elif osname == 'posix':
@@ -59,11 +60,11 @@ module1 = Extension('pyride_remote',
                     sources = ['RemotePyModule.cpp', 'RemoteDataHandler.cpp', 'VideoStreamController.cpp', '../Common/PyRideNetComm.cpp', '../Common/ConsoleDataProcessor.cpp', '../Common/PyRideCommon.cpp', '../Common/RTPDataReceiver.cpp'])
 
 setup (name = 'pyride_remote',
-       version = '1.0.0',
+       version = '0.1.0',
        description = 'This is a Python client extension module for PyRIDE.',
        author = 'Xun Wang',
        author_email = 'Wang.Xun@gmail.com',
-       license = 'GPL V3',
+       license = 'MIT',
        platforms = 'Linux, OS X, Windows',
        ext_modules = [module1])
 

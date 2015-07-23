@@ -10,7 +10,7 @@
 #ifndef RTP_DATA_RECEIVER_H
 #define RTP_DATA_RECEIVER_H
 
-namespace tinremote {
+namespace pyride_remote {
 class RTPDataReceiver {
 public:
   RTPDataReceiver();

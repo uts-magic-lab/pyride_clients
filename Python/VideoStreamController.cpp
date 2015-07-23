@@ -1,6 +1,5 @@
-#include "PyRideCommon.h"
+#include <unistd.h>
 #include "VideoStreamController.h"
-#include "RTPDataReceiver.h"
 
 namespace pyride_remote {
 
@@ -17,6 +16,7 @@ void * video_thread( void * processor )
 
 VideoStreamController::VideoStreamController() :
   isStreaming_( false ),
+  toDecode_( true ),
   grabWaitTime_( 100000 ), // default to 10FPS
   dataThread_( (pthread_t)NULL ),
   imageData_( NULL ),
@@ -65,8 +65,7 @@ void VideoStreamController::setVideoSource( const char * host, const VideoSettin
 bool VideoStreamController::grabVideoStreamData( unsigned char * & data, int & data_size, bool decode )
 {
   unsigned char * rawData = NULL;
-  unsigned char * data = NULL;
-  int dataSize = 0, rawDataSize = 0;
+  int rawDataSize = 0;
   bool dataSizeChanged = false;
 
   if (!dataStream_)
@@ -75,30 +74,34 @@ bool VideoStreamController::grabVideoStreamData( unsigned char * & data, int & d
   rawDataSize = dataStream_->grabData( &rawData, dataSizeChanged );
 
   data = rawData;
-  dataSize = rawDataSize;
+  data_size = rawDataSize;
 
   //DEBUG_MSG( "Got video data %d.\n", dataSize );
-  if (dataSize == 0)
+  if (data_size == 0)
     return false;
+
+  if (decode) {
+    jpeg_mem_src( &cinfo_, data, data_size );
+    jpeg_read_header( &cinfo_, true );
+    jpeg_start_decompress( &cinfo_ );
+    int rowStride = cinfo_.output_width * cinfo_.output_components;
+
+    if (imageDataSize_ != rowStride * cinfo_.output_height) {
+      printf( "invalid input image format, skip!\n" );
+      return false;
+    }
+    unsigned char *buffer_array[1];
+
+    while (cinfo_.output_scanline < cinfo_.output_height) {
+      buffer_array[0] = imageData_ + (cinfo_.output_scanline) * rowStride;
+
+      jpeg_read_scanlines( &cinfo_, buffer_array, 1 );
+    }
   
-  jpeg_mem_src( &cinfo_, data, dataSize );
-  jpeg_read_header( &cinfo_, true );
-  jpeg_start_decompress( &cinfo_ );
-  int rowStride = cinfo_.output_width * cinfo_.output_components;
-
-  if (imageDataSize_ != rowStride * cinfo_.output_height) {
-    printf( "invalid input image format, skip!\n" );
-    return false;
+    jpeg_finish_decompress( &cinfo_ );
+    data = imageData_;
+    data_size = imageDataSize_;
   }
-  unsigned char *buffer_array[1];
-
-  while (cinfo_.output_scanline < cinfo_.output_height) {
-    buffer_array[0] = imageData_ + (cinfo_.output_scanline) * rowStride;
-
-    jpeg_read_scanlines( &cinfo_, buffer_array, 1 );
-  }
-
-  jpeg_finish_decompress( &cinfo_ );
   return true;
 }
 
@@ -141,7 +144,7 @@ void VideoStreamController::dataThreadProc()
   unsigned char * data = NULL;
   int dataSize = 0;
   while (isStreaming_) {
-    if (grabVideoStreamData( data, dataSize ) && delegate_) {
+    if (grabVideoStreamData( data, dataSize, toDecode_ ) && delegate_) {
       delegate_->onVideoDataInput( data, dataSize );
     }
     ::usleep( grabWaitTime_ );

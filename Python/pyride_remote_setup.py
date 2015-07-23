@@ -8,6 +8,14 @@ from distutils.core import setup, Extension
 #from setuptools import setup, find_packages, Extension
 #import distutilscross
 
+# Remove the "-Wstrict-prototypes" compiler option, which isn't valid for C++.
+import distutils.sysconfig
+cfg_vars = distutils.sysconfig.get_config_vars()
+for key, value in cfg_vars.items():
+    if type(value) == str:
+        cfg_vars[key] = value.replace("-Wstrict-prototypes", "")
+# ==================================
+
 BIG_ENDIAN_ARCH = [ 'sparc', 'powerpc', 'ppc' ]
 
 macro = [ ('PYRIDE_REMOTE_CLIENT', None), ('USE_ENCRYPTION', None),
@@ -22,8 +30,8 @@ if osname == 'nt':
   inc_dirs = ['../Windows/include', '../Common']
   lib_dirs = ['../Windows/lib/Release']
 elif osname == 'posix':
-  #lib = ['pthread', 'ccext2', 'ccrtp1', 'ccgnu2','crypto', 'jpeg' ]
-  lib = [ 'pthread', 'crypto' ]
+  lib = ['pthread', 'ccext2', 'ccrtp1', 'ccgnu2','crypto', 'jpeg' ]
+  #lib = [ 'pthread', 'crypto' ]
   inc_dirs = ['../Common']
   lib_dirs = []
   f = os.popen('uname -ms')
@@ -47,7 +55,7 @@ module1 = Extension('pyride_remote',
                     include_dirs = inc_dirs,
                     library_dirs = lib_dirs,
                     libraries = lib,
-                    sources = ['RemotePyModule.cpp', 'RemoteDataHandler.cpp', '../Common/PyRideNetComm.cpp', '../Common/ConsoleDataProcessor.cpp', '../Common/PyRideCommon.cpp'])
+                    sources = ['RemotePyModule.cpp', 'RemoteDataHandler.cpp', 'VideoStreamController.cpp', '../Common/PyRideNetComm.cpp', '../Common/ConsoleDataProcessor.cpp', '../Common/PyRideCommon.cpp', '../Common/RTPDataReceiver.cpp'])
 
 setup (name = 'pyride_remote',
        version = '1.0.0',

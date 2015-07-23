@@ -221,24 +221,39 @@ static PyObject * PyModule_GetSetActiveCamera( PyObject *self, PyObject * args )
   }
 }
 
-static PyObject * PyModule_PR2RegisterImageData( PyObject * self, PyObject * args )
+static PyObject * PyModule_RegisterImageData( PyObject * self, PyObject * args )
 {
   PyObject * callbackFn = NULL;
+  PyObject * boolObj = NULL;
   int fps = 1;
+  bool decode = true;
 
   if (!s_datahandler->isConnected()) {
     PyErr_Format( PyExc_StandardError, "pyride_remote: we are not connected to a robot." );
     return NULL;
   }
 
-  if (!PyArg_ParseTuple( args, "O|i", &callbackFn, &fps )) {
+  if (!PyArg_ParseTuple( args, "O|Oi", &callbackFn, &boolObj, &fps )) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
   }
 
+  if (boolObj) {
+    if (PyBool_Check( boolObj )) {
+      decode = PyObject_IsTrue( boolObj );
+    }
+    else {
+      PyErr_Format( PyExc_ValueError, "pyride_remote: second input parameter must be a boolean!" );
+      return NULL;
+    }
+  }
+
+  if (fps <= 0 || fps >= 30) {
+    PyErr_Format( PyExc_ValueError, "Requested FPS must be within [1,30]." );
+  }
+
   if (callbackFn == Py_None) {
-    PyPR2Module::instance()->setBaseScanCallback( NULL );
-    s_datahandler->deregisterForImageData();
+    s_datahandler->registerForImageData( NULL );
     Py_RETURN_NONE;
   }
 
@@ -247,11 +262,7 @@ static PyObject * PyModule_PR2RegisterImageData( PyObject * self, PyObject * arg
     return NULL;
   }
 
-  PyPR2Module::instance()->setBaseScanCallback( callbackFn );
-
-  if (fps <= 0 || fps >= 30) {
-    PyErr_Format( PyExc_ValueError, "Requested FPS must be within [1,30]." );
-  }
+  s_datahandler->registerForImageData( callbackFn, decode );
 
   Py_RETURN_NONE;
 }

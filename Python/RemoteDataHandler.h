@@ -40,6 +40,8 @@ public:
   int activeCamera() const { return activeCam_; }
   bool activeCamera( int camid );
 
+  void registerForImageData( PyObject * callback, bool decodeImage = true );
+
 protected:
   void onRobotCreated( const char cID, const int ipAddr, const RobotInfo * rinfo,
                             const VideoSettings * vsettings, const AudioSettings * asettings,
@@ -59,6 +61,8 @@ protected:
                                  const unsigned char * optionalData = NULL,
                                  const int optionalDataLength = 0 );
 
+  void onVideoDataInput( const unsigned char * data, const int dataSize );
+
 private:
 #ifdef WIN32
 #else
@@ -75,6 +79,7 @@ private:
   
   VideoStreamController vsc_;
   PyObject * pPyModule_;
+  PyObject * imageDataCB_;
   
   void invokeCallback( const char * fnName, PyObject * arg );
   void invokeCallback( PyObject * & cbObj, PyObject * arg );

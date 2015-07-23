@@ -12,7 +12,7 @@
 #include "RTPDataReceiver.h"
 #include "PyRideCommon.h"
 
-namespace tinremote {
+namespace pyride_remote {
 using namespace std;
 using namespace ost;
 

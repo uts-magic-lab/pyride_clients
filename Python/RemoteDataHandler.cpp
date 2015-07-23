@@ -32,8 +32,10 @@ PyRideRemoteDataHandler::PyRideRemoteDataHandler( PyObject * pyModule ) :
   hasExclusiveControl_( false ),
   canHaveExclusiveControl_( false ),
   finalShutdown_( false ),
-  pPyModule_( pyModule )
+  pPyModule_( pyModule ),
+  imageDataCB_( NULL )
 {
+  vsc_.setDelegate( this );
   ConsoleDataProcessor::instance()->init( this );
 #ifdef WIN32
   _beginthread( data_thread, 0, NULL );
@@ -79,6 +81,7 @@ void PyRideRemoteDataHandler::onRobotCreated( const char cID, const int ipAddr, 
       dataPtr += length;
     }
     activeCam_ = 0;
+    vsc_.setVideoSource( NULL, vsettings );
   }
 
   if (finalShutdown_)
@@ -106,6 +109,12 @@ void PyRideRemoteDataHandler::onRobotDestroyed( const char cID )
 
   robotID_ = -1;
   
+  if (imageDataCB_) {
+    vsc_.processVideoStream( false );
+    Py_DECREF( imageDataCB_ );
+    imageDataCB_ = NULL;
+  }
+
   cameraLabels_.clear();
   activeCam_ = -1;
 
@@ -149,6 +158,7 @@ void PyRideRemoteDataHandler::onVideoStreamControl( bool isStart, const char cID
   if (cID != robotID_)
     return;
 
+  vsc_.processVideoStream( isStart );
 }
 
 void PyRideRemoteDataHandler::onVideoStreamSwitch( const char cID, const VideoSettings * vsettings )
@@ -157,7 +167,7 @@ void PyRideRemoteDataHandler::onVideoStreamSwitch( const char cID, const VideoSe
     return;
 
   if (pendingCam_ >= 0) {
-    //vsc_.setVideoSource( NULL, vsettings);
+    vsc_.setVideoSource( NULL, vsettings);
     if (!finalShutdown_) {
       PyGILState_STATE gstate;
       gstate = PyGILState_Ensure();
@@ -282,7 +292,7 @@ int PyRideRemoteDataHandler::getCameraList( std::vector<std::string> & camlabels
 
 bool PyRideRemoteDataHandler::activeCamera( int camid )
 {
-  if (camid < 0 || camid >= cameraLabels_.size())
+  if (camid < 0 || camid >= (int)cameraLabels_.size())
     return false;
 
   pendingCam_ = camid;
@@ -290,9 +300,40 @@ bool PyRideRemoteDataHandler::activeCamera( int camid )
   return true;
 }
 
-void PyRideRemoteDataHandler::onVideoDataInput( const unsigned char * data )
+void PyRideRemoteDataHandler::registerForImageData( PyObject * callback, bool decodeImage )
 {
+  if (callback) {
+    Py_INCREF( callback );
+    if (imageDataCB_) {
+      Py_DECREF( imageDataCB_ );
+    }
+    else { // start streaming
+      ConsoleDataProcessor::instance()->startCameraImageStream( robotID_ );
+    }
+    imageDataCB_ = callback;
+    vsc_.decodeImage( decodeImage );
+  }
+  else if (imageDataCB_) { // stop streaming
+    Py_DECREF( imageDataCB_ );
+    imageDataCB_ = NULL;
+    ConsoleDataProcessor::instance()->stopCameraImageStream( robotID_ );
+  }
+}
 
+void PyRideRemoteDataHandler::onVideoDataInput( const unsigned char * data, const int dataSize )
+{
+  if (imageDataCB_ && !finalShutdown_) {
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+
+    PyObject * arg = Py_BuildValue( "(O)", PyByteArray_FromStringAndSize( (char*)data, (Py_ssize_t)dataSize ) );
+
+    this->invokeCallback( imageDataCB_, arg );
+
+    Py_DECREF( arg );
+
+    PyGILState_Release( gstate );
+  }
 }
 
 void PyRideRemoteDataHandler::invokeCallback( const char * fnName, PyObject * arg )

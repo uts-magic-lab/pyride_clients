@@ -1,13 +1,21 @@
 #pragma once
 #include <pthread.h>
+#include <stdio.h>
+#include <jpeglib.h>
 #include "RTPDataReceiver.h"
+#include "PyRideCommon.h"
 
 namespace pyride_remote {
+
+class VideoStreamController;
 
 class VideoStreamControllerDelegate
 {
 public:
-  virtual void onVideoDataInput( const unsigned char * data, const int data_size ) = 0;
+  virtual ~VideoStreamControllerDelegate() {}
+  virtual void onVideoDataInput( const unsigned char * data, const int dataSize ) = 0;
+
+  friend class VideoStreamController;
 };
 
 class VideoStreamController
@@ -18,6 +26,7 @@ public:
 
   void setVideoSource( const char * host, const VideoSettings * vsettings );
   void setDelegate( VideoStreamControllerDelegate * delegate );
+  void decodeImage( bool decode ) { toDecode_ = decode; }
 
   void processVideoStream( bool isStart );
   bool isStreaming() { return isStreaming_; }
@@ -26,6 +35,7 @@ public:
 
 private:
   bool isStreaming_;
+  bool toDecode_;
   unsigned int grabWaitTime_;
 
 #ifdef WIN32

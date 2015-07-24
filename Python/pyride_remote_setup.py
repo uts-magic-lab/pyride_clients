@@ -4,9 +4,8 @@
 #
 
 import os
-from distutils.core import setup, Extension
-#from setuptools import setup, find_packages, Extension
-#import distutilscross
+#from distutils.core import setup, Extension
+from setuptools import setup, find_packages, Extension
 
 # Remove the "-Wstrict-prototypes" compiler option, which isn't valid for C++.
 import distutils.sysconfig
@@ -26,14 +25,13 @@ lib = []
 osname = os.name
 if osname == 'nt':
   macro = macro + [('WIN32', None), ('WIN32_LEAN_AND_MEAN', None), ('NO_WINCOM', None)]
-  macro = macro + [('CCXX_STATIC', None)]
+  macro = macro + [('CCXX_STATIC', None), ('CCXX_NAMESPACES', None)]
   lib = ['ws2_32', 'Kernel32', 'libeay32', 'advapi32', 'oleaut32', 'user32', 'gdi32']
-  lib = lib + ['ccext2', 'ccrtp1', 'ccgnu2', 'jpeg' ]
+  lib = lib + ['ccext2', 'ccrtp1', 'ccgnu2', 'jpeg-static' ]
   inc_dirs = ['../Windows/include', '../Common']
   lib_dirs = ['../Windows/lib']
 elif osname == 'posix':
   lib = ['pthread', 'ccext2', 'ccrtp1', 'ccgnu2','crypto', 'jpeg' ]
-  #lib = [ 'pthread', 'crypto' ]
   inc_dirs = ['../Common']
   lib_dirs = []
   f = os.popen('uname -ms')
@@ -62,6 +60,7 @@ module1 = Extension('pyride_remote',
 setup (name = 'pyride_remote',
        version = '0.1.0',
        description = 'This is a Python client extension module for PyRIDE.',
+       url = 'https://github.com/uts-magic-lab/pyride_clients',
        author = 'Xun Wang',
        author_email = 'Wang.Xun@gmail.com',
        license = 'MIT',

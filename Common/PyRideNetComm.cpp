@@ -133,12 +133,13 @@ void PyRideNetComm::stopProcessing()
 
 #ifndef PYRIDE_REMOTE_CLIENT
 #ifdef WIN32
-    WaitForSingleObject( runThread_, INFINITE );;
-    CloseHandle( runThread_ );
+  WaitForSingleObject( runThread_, INFINITE );
+  CloseHandle( runThread_ );
+  runThread_ = 0;
 #else
   pthread_join( runThread_, NULL ); // allow thread to exit
-#endif
   runThread_ = (pthread_t)NULL;
+#endif
 #endif
   this->delAllTimers();
 }

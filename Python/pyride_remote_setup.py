@@ -21,6 +21,7 @@ macro = [ ('PYRIDE_REMOTE_CLIENT', None), ('USE_ENCRYPTION', None),
          ('NO_AUTO_DISCOVERY', None) ]
 
 lib = []
+link_args = []
 
 osname = os.name
 if osname == 'nt':
@@ -30,6 +31,7 @@ if osname == 'nt':
   lib = lib + ['ccext2', 'ccrtp1', 'ccgnu2', 'jpeg-static' ]
   inc_dirs = ['../Windows/include', '../Common']
   lib_dirs = ['../Windows/lib/release']
+  link_args = ['/NODEFAULTLIB:libcmt']
 elif osname == 'posix':
   lib = ['pthread', 'ccext2', 'ccrtp1', 'ccgnu2','crypto', 'jpeg' ]
   inc_dirs = ['../Common']
@@ -55,6 +57,7 @@ module1 = Extension('pyride_remote',
                     include_dirs = inc_dirs,
                     library_dirs = lib_dirs,
                     libraries = lib,
+                    extra_link_args=link_args,
                     sources = ['RemotePyModule.cpp', 'RemoteDataHandler.cpp', 'VideoStreamController.cpp', '../Common/PyRideNetComm.cpp', '../Common/ConsoleDataProcessor.cpp', '../Common/PyRideCommon.cpp', '../Common/RTPDataReceiver.cpp'])
 
 setup (name = 'pyride_remote',

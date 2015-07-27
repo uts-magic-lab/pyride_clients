@@ -10,19 +10,19 @@
 namespace pyride_remote {
 
 #ifdef WIN32
-void data_thread( void * proc )
+unsigned __stdcall data_thread(void * proc)
 #else
 void * data_thread( void * proc )
 #endif
 {
   ConsoleDataProcessor::instance()->processingData();
-#ifndef WIN32
   return NULL;
-#endif
 }
 
 PyRideRemoteDataHandler::PyRideRemoteDataHandler( PyObject * pyModule ) :
-#ifndef WIN32
+#ifdef WIN32
+  runThread_( 0 ),
+#else
   runThread_( (pthread_t)NULL ),
 #endif
   robotID_( -1 ),
@@ -38,7 +38,8 @@ PyRideRemoteDataHandler::PyRideRemoteDataHandler( PyObject * pyModule ) :
   vsc_.setDelegate( this );
   ConsoleDataProcessor::instance()->init( this );
 #ifdef WIN32
-  _beginthread( data_thread, 0, NULL );
+  //_beginthread( data_thread, 0, NULL );
+  runThread_ = (HANDLE)_beginthreadex( NULL, 0, &data_thread, this, 0, NULL );
 #else
   if (pthread_create( &runThread_, NULL, data_thread, this ) ) {
     ERROR_MSG( "Unable to create data thread for console data processor!\n" );
@@ -51,6 +52,14 @@ PyRideRemoteDataHandler::~PyRideRemoteDataHandler()
 {
   finalShutdown_ = true;
   ConsoleDataProcessor::instance()->fini();
+#ifdef WIN32
+  WaitForSingleObject(runThread_, 20);
+  CloseHandle(runThread_);
+  runThread_ = 0;
+#else
+  pthread_join(runThread_, NULL); // allow thread to exit
+  runThread_ = (pthread_t)NULL;
+#endif
 }
 
 void PyRideRemoteDataHandler::onRobotCreated( const char cID, const int ipAddr, const RobotInfo * rinfo,
@@ -167,7 +176,7 @@ void PyRideRemoteDataHandler::onVideoStreamSwitch( const char cID, const VideoSe
     return;
 
   if (pendingCam_ >= 0) {
-    vsc_.setVideoSource( NULL, vsettings);
+    vsc_.setVideoSource( NULL, vsettings );
     if (!finalShutdown_) {
       PyGILState_STATE gstate;
       gstate = PyGILState_Ensure();

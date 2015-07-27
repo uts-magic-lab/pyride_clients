@@ -65,6 +65,7 @@ protected:
 
 private:
 #ifdef WIN32
+  HANDLE runThread_;
 #else
   pthread_t runThread_;
 #endif

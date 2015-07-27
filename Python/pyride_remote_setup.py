@@ -29,7 +29,7 @@ if osname == 'nt':
   lib = ['ws2_32', 'Kernel32', 'libeay32', 'advapi32', 'oleaut32', 'user32', 'gdi32']
   lib = lib + ['ccext2', 'ccrtp1', 'ccgnu2', 'jpeg-static' ]
   inc_dirs = ['../Windows/include', '../Common']
-  lib_dirs = ['../Windows/lib']
+  lib_dirs = ['../Windows/lib/release']
 elif osname == 'posix':
   lib = ['pthread', 'ccext2', 'ccrtp1', 'ccgnu2','crypto', 'jpeg' ]
   inc_dirs = ['../Common']

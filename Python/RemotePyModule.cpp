@@ -341,6 +341,5 @@ PyMODINIT_FUNC initpyride_remote( void )
 
   Py_INCREF( pyModule );
   s_datahandler = new PyRideRemoteDataHandler( pyModule );
-  atexit( finiModule );
-  //delete cmd
+  Py_AtExit( finiModule );
 }

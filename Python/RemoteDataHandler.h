@@ -2,7 +2,7 @@
 /*
  * pyride_remote
  * Copyright (C) Xun Wang 2013, 2015 <wang.xun@gmail.com>
- * 
+ *
  */
 
 #ifndef _REMOTE_DATA_HANDLER_H_
@@ -18,17 +18,23 @@
 #include <string>
 #endif
 
-#include "VideoStreamController.h"
 #include "ConsoleDataProcessor.h"
+
+#ifdef WITH_VIDEO_DATA
+#include "VideoStreamController.h"
+#endif
 
 namespace pyride_remote {
 
-class PyRideRemoteDataHandler : public PyRideConsoleCommandHandler, VideoStreamControllerDelegate
+class PyRideRemoteDataHandler : public PyRideConsoleCommandHandler
+#ifdef WITH_VIDEO_DATA
+, VideoStreamControllerDelegate
+#endif
 {
 public:
   PyRideRemoteDataHandler( PyObject * pyModule );
   virtual ~PyRideRemoteDataHandler();
-  
+
   bool isConnected() const { return (robotID_ != -1); }
   bool isTelemetryOn() const { return isTelemetryOn_; }
   bool hasExclusiveControl() const { return hasExclusiveControl_; }
@@ -40,7 +46,9 @@ public:
   int activeCamera() const { return activeCam_; }
   bool activeCamera( int camid );
 
+#ifdef WITH_VIDEO_DATA
   void registerForImageData( PyObject * callback, bool decodeImage = true );
+#endif
 
 protected:
   void onRobotCreated( const char cID, const int ipAddr, const RobotInfo * rinfo,
@@ -61,7 +69,9 @@ protected:
                                  const unsigned char * optionalData = NULL,
                                  const int optionalDataLength = 0 );
 
+#ifdef WITH_VIDEO_DATA
   void onVideoDataInput( const unsigned char * data, const int dataSize );
+#endif
 
 private:
 #ifdef WIN32
@@ -77,11 +87,14 @@ private:
   bool hasExclusiveControl_;
   bool canHaveExclusiveControl_;
   bool finalShutdown_;
-  
-  VideoStreamController vsc_;
+
   PyObject * pPyModule_;
+
+#ifdef WITH_VIDEO_DATA
+  VideoStreamController vsc_;
   PyObject * imageDataCB_;
-  
+#endif
+
   void invokeCallback( const char * fnName, PyObject * arg );
   void invokeCallback( PyObject * & cbObj, PyObject * arg );
 };

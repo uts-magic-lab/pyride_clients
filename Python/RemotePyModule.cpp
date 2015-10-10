@@ -1,6 +1,6 @@
 /*
  *  PyRideRemotePyModule.cpp
- *  
+ *
  */
 
 #include <openssl/sha.h>
@@ -19,7 +19,7 @@ PYRIDE_NO_LOGGING;
 
 PyDoc_STRVAR( PyRideRemote_doc, \
              "pyride_remote is a remote client extension module for PyRIDE." );
-  
+
 static PyRideRemoteDataHandler * s_datahandler = NULL;
 
 /**
@@ -30,12 +30,12 @@ static PyObject * PyModule_connect( PyObject * self, PyObject * args )
 {
   char * ipaddr = NULL;
   char * authcode = NULL;
-  
+
   if (s_datahandler->isConnected()) {
     PyErr_Format( PyExc_StandardError, "pyride_remote: we have already connect to a robot." );
     return NULL;
   }
-  
+
   if (!PyArg_ParseTuple( args, "ss", &ipaddr, &authcode )) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
@@ -55,10 +55,10 @@ static PyObject * PyModule_connect( PyObject * self, PyObject * args )
   else {
     secureSHA256Hash( (unsigned char*)authcode, (int)strlen(authcode), encauth );
   }
-  
+
   if (!ConsoleDataProcessor::instance()->logonToRobot( ipaddr, encauth )) {
     PyErr_Format( PyExc_ValueError, "pyride_remote: invalid IP or name for robot." );
-    
+
     return NULL;
   }
 
@@ -88,10 +88,10 @@ static PyObject * PyModule_HasExclusiveControl( PyObject *self )
 static PyObject * PyModule_disconnect( PyObject *self )
 {
   ConsoleDataProcessor::instance()->disconnectRobots();
-  Py_RETURN_NONE;  
+  Py_RETURN_NONE;
 }
 
-static PyObject * PyModule_LetTiNSpeak( PyObject *self, PyObject * args )
+static PyObject * PyModule_RobotTTS( PyObject *self, PyObject * args )
 {
   char * tts = NULL;
 
@@ -104,15 +104,15 @@ static PyObject * PyModule_LetTiNSpeak( PyObject *self, PyObject * args )
     // PyArg_ParseTuple will set the error status.
     return NULL;
   }
-  
+
   float volume = 1.0;
   int datalength = int(strlen( tts ) + sizeof( float ));
   unsigned char * data = new unsigned char[datalength];
   unsigned char * dataptr = data;
-  
+
   memcpy( dataptr, &volume, sizeof( float ) ); dataptr += sizeof( float );
   memcpy( dataptr, tts, datalength - sizeof( float ) );
-  
+
   ConsoleDataProcessor::instance()->issueExtendedCommand( s_datahandler->robotID(), SPEAK, data, datalength );
   delete [] data;
 
@@ -138,7 +138,7 @@ static PyObject * PyModule_DisableTelemery( PyObject *self )
     PyErr_Format( PyExc_StandardError, "pyride_remote: we have not connected to a robot yet." );
     return NULL;
   }
-  
+
   if (s_datahandler->isTelemetryOn()) {
     ConsoleDataProcessor::instance()->stopTelemetryStream();
   }
@@ -151,7 +151,7 @@ static PyObject * PyModule_TakeExclusiveControl( PyObject *self )
     PyErr_Format( PyExc_StandardError, "pyride_remote: we have not connected to a robot yet." );
     return NULL;
   }
-  
+
   if (!s_datahandler->canHaveExclusiveControl()) {
     PyErr_Format( PyExc_StandardError, "pyride_remote: we are not allowed to have the exclusive control to robot yet." );
     return NULL;
@@ -169,7 +169,7 @@ static PyObject * PyModule_ReleaseExclusiveControl( PyObject *self )
     PyErr_Format( PyExc_StandardError, "pyride_remote: we have not connected to a robot yet." );
     return NULL;
   }
-  
+
   if (s_datahandler->hasExclusiveControl()) {
     ConsoleDataProcessor::instance()->issueExtendedCommand( s_datahandler->robotID(), EXCLUSIVE_CTRL_RELEASE, NULL, 0 );
   }
@@ -221,6 +221,7 @@ static PyObject * PyModule_GetSetActiveCamera( PyObject *self, PyObject * args )
   }
 }
 
+#ifdef WITH_VIDEO_DATA
 static PyObject * PyModule_RegisterImageData( PyObject * self, PyObject * args )
 {
   PyObject * callbackFn = NULL;
@@ -266,17 +267,18 @@ static PyObject * PyModule_RegisterImageData( PyObject * self, PyObject * args )
 
   Py_RETURN_NONE;
 }
+#endif
 
 static PyObject * PyModule_IssueCustomCommand( PyObject *self, PyObject * args )
 {
   int cmdID = -1;
   char * cmdtxt = NULL;
-  
+
   if (!s_datahandler->isConnected()) {
     PyErr_Format( PyExc_StandardError, "pyride_remote: we are not connected to a robot." );
     return NULL;
   }
-  
+
   if (!PyArg_ParseTuple( args, "is", &cmdID, &cmdtxt )) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
@@ -295,9 +297,9 @@ static PyObject * PyModule_IssueCustomCommand( PyObject *self, PyObject * args )
 static PyMethodDef PyModule_methods[] = {
   { "connect", (PyCFunction)PyModule_connect, METH_VARARGS,
     "Connect to a robot." },
-  { "isconnected", (PyCFunction)PyModule_IsConnected, METH_NOARGS,
+  { "is_connected", (PyCFunction)PyModule_IsConnected, METH_NOARGS,
     "Check remote robot connection status." },
-  { "say", (PyCFunction)PyModule_LetTiNSpeak, METH_VARARGS,
+  { "say", (PyCFunction)PyModule_RobotTTS, METH_VARARGS,
     "Make robot to speak." },
   { "enable_telemery", (PyCFunction)PyModule_EnableTelemery, METH_NOARGS,
     "Enable robot Telemetry streaming." },
@@ -307,7 +309,7 @@ static PyMethodDef PyModule_methods[] = {
     "Take exclusive control of the connected robot." },
   { "release_control", (PyCFunction)PyModule_ReleaseExclusiveControl, METH_NOARGS,
     "Release exclusive control of the connected robot." },
-  { "hascontrol", (PyCFunction)PyModule_HasExclusiveControl, METH_NOARGS,
+  { "has_control", (PyCFunction)PyModule_HasExclusiveControl, METH_NOARGS,
     "Check whether we have exclusive control of robot." },
   { "issue_command", (PyCFunction)PyModule_IssueCustomCommand, METH_VARARGS,
     "Send exclusive control command to the robot." },
@@ -315,8 +317,10 @@ static PyMethodDef PyModule_methods[] = {
     "Return a list of cameras on the robot." },
   { "active_camera", (PyCFunction)PyModule_GetSetActiveCamera, METH_VARARGS,
     "get (or set) the active camera on the robot." },
+#ifdef WITH_VIDEO_DATA
   { "register_image_data", (PyCFunction)PyModule_RegisterImageData, METH_VARARGS,
     "Register (or deregister) a callback function to get image data from the active robot camera." },
+#endif
   { "disconnect", (PyCFunction)PyModule_disconnect, METH_NOARGS,
   "Disconnect from a robot." },
   { NULL, NULL, 0, NULL }           /* sentinel */

@@ -14,28 +14,40 @@ for key, value in cfg_vars.items():
     if type(value) == str:
         cfg_vars[key] = value.replace("-Wstrict-prototypes", "")
 # ==================================
+with_video_data = 'WITH_VIDEO_DATA' in os.environ
 
 BIG_ENDIAN_ARCH = [ 'sparc', 'powerpc', 'ppc' ]
 
 macro = [ ('PYRIDE_REMOTE_CLIENT', None), ('USE_ENCRYPTION', None),
          ('NO_AUTO_DISCOVERY', None) ]
 
+src_code = ['RemotePyModule.cpp', 'RemoteDataHandler.cpp', '../Common/PyRideNetComm.cpp',
+            '../Common/ConsoleDataProcessor.cpp', '../Common/PyRideCommon.cpp']
+inc_dirs = ['../Common']
 lib = []
 link_args = []
+lib_dirs = []
+
+if with_video_data:
+  macro.append(('WITH_VIDEO_DATA', None))
+  src_code = src_code + ['VideoStreamController.cpp', '../Common/RTPDataReceiver.cpp']
 
 osname = os.name
 if osname == 'nt':
   macro = macro + [('WIN32', None), ('WIN32_LEAN_AND_MEAN', None), ('NO_WINCOM', None)]
-  macro = macro + [('CCXX_STATIC', None), ('CCXX_NAMESPACES', None)]
   lib = ['ws2_32', 'Kernel32', 'libeay32', 'advapi32', 'oleaut32', 'user32', 'gdi32']
-  lib = lib + ['ccext2', 'ccrtp1', 'ccgnu2', 'jpeg-static' ]
-  inc_dirs = ['../Windows/include', '../Common']
-  lib_dirs = ['../Windows/lib/release']
-  link_args = ['/NODEFAULTLIB:libcmt']
+  if with_video_data:
+    macro = macro + [('CCXX_STATIC', None), ('CCXX_NAMESPACES', None)]
+    lib = lib + ['ccext2', 'ccrtp1', 'ccgnu2', 'jpeg-static' ]
+    inc_dirs = inc_dirs + ['../Windows/include']
+    lib_dirs = ['../Windows/lib/release']
+    link_args = ['/NODEFAULTLIB:libcmt']
 elif osname == 'posix':
-  lib = ['pthread', 'ccext2', 'ccrtp1', 'ccgnu2','crypto', 'jpeg' ]
-  inc_dirs = ['../Common']
-  lib_dirs = []
+  if with_video_data:
+    lib = ['pthread', 'ccext2', 'ccrtp1', 'ccgnu2','crypto', 'jpeg']
+  else:
+    lib = ['pthread']
+
   f = os.popen('uname -ms')
   (myos, myarch) = f.readline().split(' ')
   f.close()
@@ -43,7 +55,7 @@ elif osname == 'posix':
     macro.append(('BSD_COMPAT', None))
   elif myos == 'SunOS':
     macro.append(('SOLARIS', None))
-  
+
   for arch in BIG_ENDIAN_ARCH:
     if arch in myarch:
       macro.append(('WITH_BIG_ENDIAN', None))
@@ -57,8 +69,8 @@ module1 = Extension('pyride_remote',
                     include_dirs = inc_dirs,
                     library_dirs = lib_dirs,
                     libraries = lib,
-                    extra_link_args=link_args,
-                    sources = ['RemotePyModule.cpp', 'RemoteDataHandler.cpp', 'VideoStreamController.cpp', '../Common/PyRideNetComm.cpp', '../Common/ConsoleDataProcessor.cpp', '../Common/PyRideCommon.cpp', '../Common/RTPDataReceiver.cpp'])
+                    extra_link_args = link_args,
+                    sources = src_code)
 
 setup (name = 'pyride_remote',
        version = '0.1.0',
@@ -69,4 +81,3 @@ setup (name = 'pyride_remote',
        license = 'MIT',
        platforms = 'Linux, OS X, Windows',
        ext_modules = [module1])
-

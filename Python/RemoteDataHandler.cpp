@@ -2,7 +2,7 @@
 /*
  * pyride_remote
  * Copyright (C) Xun Wang 2013,2015 <wang.xun@gmail.com>
- * 
+ *
  */
 
 #include "RemoteDataHandler.h"
@@ -32,10 +32,14 @@ PyRideRemoteDataHandler::PyRideRemoteDataHandler( PyObject * pyModule ) :
   hasExclusiveControl_( false ),
   canHaveExclusiveControl_( false ),
   finalShutdown_( false ),
-  pPyModule_( pyModule ),
-  imageDataCB_( NULL )
+  pPyModule_( pyModule )
+#ifdef WITH_VIDEO_DATA
+  ,imageDataCB_( NULL )
+#endif
 {
+#ifdef WITH_VIDEO_DATA
   vsc_.setDelegate( this );
+#endif
   ConsoleDataProcessor::instance()->init( this );
 #ifdef WIN32
   //_beginthread( data_thread, 0, NULL );
@@ -90,7 +94,9 @@ void PyRideRemoteDataHandler::onRobotCreated( const char cID, const int ipAddr, 
       dataPtr += length;
     }
     activeCam_ = 0;
+#ifdef WITH_VIDEO_DATA
     vsc_.setVideoSource( NULL, vsettings );
+#endif
   }
 
   if (finalShutdown_)
@@ -98,13 +104,13 @@ void PyRideRemoteDataHandler::onRobotCreated( const char cID, const int ipAddr, 
 
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
-  
+
   PyObject * arg = Py_BuildValue( "(i)", rinfo->type );
 
   this->invokeCallback( "onRobotConnected", arg );
-  
+
   Py_DECREF( arg );
-  
+
   PyGILState_Release( gstate );
 }
 
@@ -117,24 +123,26 @@ void PyRideRemoteDataHandler::onRobotDestroyed( const char cID )
     return;
 
   robotID_ = -1;
-  
+
+#ifdef WITH_VIDEO_DATA
   if (imageDataCB_) {
     vsc_.processVideoStream( false );
     Py_DECREF( imageDataCB_ );
     imageDataCB_ = NULL;
   }
+#endif
 
   cameraLabels_.clear();
   activeCam_ = -1;
 
   if (finalShutdown_)
     return;
-  
+
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
-  
+
   this->invokeCallback( "onRobotDisconnected", NULL );
-  
+
   PyGILState_Release( gstate );
 }
 
@@ -152,13 +160,13 @@ void PyRideRemoteDataHandler::onTelemetryStreamControl( bool isStart )
 
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
-  
+
   PyObject * arg = Py_BuildValue( "(O)", isStart ? Py_True : Py_False );
-  
+
   this->invokeCallback( "onRobotTelemetryStatus", arg );
-  
+
   Py_DECREF( arg );
-  
+
   PyGILState_Release( gstate );
 }
 
@@ -167,7 +175,9 @@ void PyRideRemoteDataHandler::onVideoStreamControl( bool isStart, const char cID
   if (cID != robotID_)
     return;
 
+#ifdef WITH_VIDEO_DATA
   vsc_.processVideoStream( isStart );
+#endif
 }
 
 void PyRideRemoteDataHandler::onVideoStreamSwitch( const char cID, const VideoSettings * vsettings )
@@ -176,7 +186,9 @@ void PyRideRemoteDataHandler::onVideoStreamSwitch( const char cID, const VideoSe
     return;
 
   if (pendingCam_ >= 0) {
+#ifdef WITH_VIDEO_DATA
     vsc_.setVideoSource( NULL, vsettings );
+#endif
     if (!finalShutdown_) {
       PyGILState_STATE gstate;
       gstate = PyGILState_Ensure();
@@ -229,7 +241,7 @@ void PyRideRemoteDataHandler::onOperationalData( const char cID, const int statu
     case NORMAL_CONTROL:
       if (hasExclusiveControl_)
         return;
-      
+
       canHaveExclusiveControl_ = (status == NORMAL_CONTROL);
       break;
     case EXCLUSIVE_CONTROL_OVERRIDE:
@@ -239,9 +251,9 @@ void PyRideRemoteDataHandler::onOperationalData( const char cID, const int statu
       if (!finalShutdown_) {
         PyGILState_STATE gstate;
         gstate = PyGILState_Ensure();
-      
+
         this->invokeCallback( "onRobotControlOverride", NULL );
-      
+
         PyGILState_Release( gstate );
       }
     }
@@ -257,7 +269,7 @@ void PyRideRemoteDataHandler::onExtendedCommandResponse( const char cID, const P
 {
   if (robotID_ != cID)
     return;
-  
+
   if (optionalDataLength != 1) {
     return;
   }
@@ -281,13 +293,13 @@ void PyRideRemoteDataHandler::onExtendedCommandResponse( const char cID, const P
     if (!finalShutdown_) {
       PyGILState_STATE gstate;
       gstate = PyGILState_Ensure();
-      
+
       PyObject * arg = Py_BuildValue( "(O)", hasExclusiveControl_ ? Py_True : Py_False );
-      
+
       this->invokeCallback( "onRobotControlStatus", arg );
-      
+
       Py_DECREF( arg );
-      
+
       PyGILState_Release( gstate );
     }
   }
@@ -309,6 +321,7 @@ bool PyRideRemoteDataHandler::activeCamera( int camid )
   return true;
 }
 
+#ifdef WITH_VIDEO_DATA
 void PyRideRemoteDataHandler::registerForImageData( PyObject * callback, bool decodeImage )
 {
   if (callback) {
@@ -344,14 +357,15 @@ void PyRideRemoteDataHandler::onVideoDataInput( const unsigned char * data, cons
     PyGILState_Release( gstate );
   }
 }
+#endif
 
 void PyRideRemoteDataHandler::invokeCallback( const char * fnName, PyObject * arg )
 {
   if (!pPyModule_)
     return;
-  
+
   //DEBUG_MSG( "Attempt get callback function %s\n", fnName );
-  
+
   PyObject * callbackFn = PyObject_GetAttrString( pPyModule_, const_cast<char *>(fnName) );
   if (!callbackFn) {
     PyErr_Clear();

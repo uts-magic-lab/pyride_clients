@@ -35,13 +35,14 @@ if with_video_data:
 osname = os.name
 if osname == 'nt':
   macro = macro + [('WIN32', None), ('WIN32_LEAN_AND_MEAN', None), ('NO_WINCOM', None)]
-  lib = ['ws2_32', 'Kernel32', 'libeay32', 'advapi32', 'oleaut32', 'user32', 'gdi32']
+  lib = ['ws2_32', 'Kernel32', 'libeay32', 'advapi32', 'oleaut32', 'user32', 'gdi32', # 'legacy_stdio_definitions',
+    'ucrt', 'vcruntime']
+  inc_dirs = inc_dirs + ['../Windows/include']
+  lib_dirs = ['../Windows/lib/release']
+  link_args = []
   if with_video_data:
     macro = macro + [('CCXX_STATIC', None), ('CCXX_NAMESPACES', None)]
     lib = lib + ['ccext2', 'ccrtp1', 'ccgnu2', 'jpeg-static' ]
-    inc_dirs = inc_dirs + ['../Windows/include']
-    lib_dirs = ['../Windows/lib/release']
-    link_args = ['/NODEFAULTLIB:libcmt']
 elif osname == 'posix':
   if with_video_data:
     lib = ['pthread', 'ccext2', 'ccrtp1', 'ccgnu2','crypto', 'jpeg']

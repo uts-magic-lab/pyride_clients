@@ -38,7 +38,7 @@ python pyride_remote_setup.py install
 You may require the admin privilege to install.
 
 ## Basic *pyride_remote* usages
- 1. **Import and connect to PyRIDE**
+### Import and connect to PyRIDE
 ```python
 import pyride_remote
 # access code is the password assigned to you
@@ -49,11 +49,9 @@ pyride_remote.is_connected() # return True, when it is connected.
 pyride_remote.disconnect()
 # When the client is disconnected from PyRIDE server, pyride_remote.onRobotDisconnected callback will be called.
 ```
-
- 2. **Issue custom command to PyRIDE**
-
+### Issue custom command to PyRIDE
+Before the client can issue commands to PyRIDE server, it must first to take the exclusive control of the PyRIDE. Only one client can take the control of the server at a time.
 ```python
-#Before the client can issue commands to PyRIDE server, it must first to take the exclusive control of the PyRIDE.
 pyride_remote.take_control()
 pyride_remote.has_control() # return True, when the client has the exclusive control of the PyRIDE server.
 pyride_remote.release_control()
@@ -63,9 +61,9 @@ pyride_remote.release_control()
 pyride_remote.issue_command( cmd_id, cmd_string )
 # On the PyRIDE server side, onRemoteCommand callback will be executed with these two input arguments.
 ```
+**NOTE::** PyRIDE can revoke the exclusive control of a remote client at anytime. When the control right is revoked, ```pyride_remote.onRobotControlOverride``` will be called on the client.
 
- 3. **Receive operational data from PyRIDE**
-
+### Receive operational data from PyRIDE
 *pyride_remote* can receive real-time operational data broadcast message from PyRIDE. Currently, operational data is the only mechanism for PyRIDE server to send/broadcast messages back to its remote clients. When the client receives a message from the server, ```pyride_remote.onRobotOperationData``` callback will be invoked.
 
 ```python

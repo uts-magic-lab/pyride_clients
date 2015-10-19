@@ -30,7 +30,7 @@ lib_dirs = []
 
 if with_video_data:
   macro.append(('WITH_VIDEO_DATA', None))
-  src_code = src_code + ['VideoStreamController.cpp', '../Common/RTPDataReceiver.cpp']
+  src_code = src_code + ['../Common/VideoStreamController.cpp', '../Common/RTPDataReceiver.cpp']
 
 osname = os.name
 if osname == 'nt':

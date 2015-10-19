@@ -358,11 +358,11 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
 #endif
       if (readLen <= 0) {
         if (readLen == 0) {
-          INFO_MSG( "Socket connection %d closed.\n", fd );
+          INFO_MSG( "Socket connection %d closed.\n", (int)fd );
         }
         else {
           ERROR_MSG( "PyRideNetComm::continuousProcessing: "
-                    "error reading data stream on %d error = %d.\n", fd, errno );
+                    "error reading data stream on %d error = %d.\n", (int)fd, errno );
         }
         disconnectClient( clientPtr );
       }
@@ -373,7 +373,7 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
           if (*dataPtr == PYRIDE_MSG_INIT && clientPtr->dataInfo.expectedDataLength == 0) { // new message
             if (readLen < 4) {
               ERROR_MSG( "PyRideNetComm::continuousProcessing: "
-                        "invalid data packet in stream on %d (too small).\n", fd );
+                        "invalid data packet in stream on %d (too small).\n", (int)fd );
               break;
             }
             dataPtr++;
@@ -382,7 +382,7 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
             readLen -= 3;
             if (dataCount < 0 || dataCount > PYRIDE_MSG_BUFFER_SIZE) { // encryption buffer size
               ERROR_MSG( "PyRideNetComm::continuousProcessing: "
-                        "invalid data size in stream on %d.\n", fd );
+                        "invalid data size in stream on %d.\n", (int)fd );
               break;
             }
             else if (dataCount > (readLen - 1)) { // the message needs multiple reads
@@ -398,7 +398,7 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
             }
             else {
               ERROR_MSG( "PyRideNetComm::continuousProcessing: "
-                        "invalid data packet in stream on %d.\n", fd );
+                        "invalid data packet in stream on %d.\n", (int)fd );
               break;
             }
           }
@@ -423,7 +423,7 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
             }
             else {
               ERROR_MSG( "PyRideNetComm::continuousProcessing: "
-                        "unexpected data fragment in data stream on %d.\n", fd );
+                        "unexpected data fragment in data stream on %d.\n", (int)fd );
               clientPtr->dataInfo.bufferedDataLength = 0;
               clientPtr->dataInfo.expectedDataLength = 0;
               break;
@@ -431,7 +431,7 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
           }
           else {
             ERROR_MSG( "PyRideNetComm::continuousProcessing: "
-                      "invalid data stream on %d.\n", fd );
+                      "invalid data stream on %d.\n", (int)fd );
             clientPtr->dataInfo.bufferedDataLength = 0;
             clientPtr->dataInfo.expectedDataLength = 0;
             break;
@@ -657,12 +657,12 @@ void PyRideNetComm::processDataInput( ClientItem * client, const unsigned char *
 #ifdef PYRIDE_REMOTE_CLIENT
     case ROBOT_DECLARE:
       if (client->cID) {
-        WARNING_MSG( "Duplicate NAO declaration message. Client %d with (new) ID %d. Ignore.\n",
+        WARNING_MSG( "Duplicate robot declaration message. Client %d with (new) ID %d. Ignore.\n",
                     client->cID, cID );
       }
       else {
         client->cID = cID;
-        client->pushData = true; // on console, we broadcast command to every connected NAO.
+        client->pushData = true; // on console, we broadcast command to every connected robot.
         /*
         char addressStr[50];
         inet_ntop( AF_INET, &client->addr.sin_addr.s_addr, addressStr, INET_ADDRSTRLEN );
@@ -955,31 +955,50 @@ bool PyRideNetComm::logonToRobot( const char * host, const unsigned char * authC
     return false;
   }
 
+  sockaddr_in cAddr;
+#ifdef WIN32
+  struct addrinfo hints, *res, *res0, *validres = NULL;
+  memset( &hints, 0, sizeof( hints ) );
+  hints.ai_family = PF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags = AI_NUMERICSERV | AI_CANONNAME;
+  char ctrlport[8];
+  snprintf( ctrlport, 8, "%d", PYRIDE_CONTROL_PORT );
+
+  if (getaddrinfo( host, ctrlport, &hints, &res0 ) ) {
+    ERROR_MSG( "Unable to get host address info for %s\n", host );
+    return false;
+  }
+  for (res = res0; res; res = res->ai_next) {
+    if (res->ai_family == AF_INET && res->ai_socktype == SOCK_STREAM) {
+      validres = res;
+      break;
+    }
+  }
+  freeaddrinfo( res0 );
+
+  if (!validres)
+    return false;
+
+  memcpy( &cAddr, validres->ai_addr, validres->ai_addrlen );
+#else  //TODO for some reason getaddrinfo does not work on OS X
   unsigned long saddr = 0;
   struct hostent * hostInfo = gethostbyname( host ); // try resolve name first
   if (!hostInfo) {
-#ifdef WIN32
-    saddr = inet_addr( host );
-    if (saddr == INADDR_NONE)
-#else
     if (inet_pton( AF_INET, host, &saddr ) != 1)
-#endif
       return false;
   }
-
-  struct sockaddr_in cAddr;
+  
   cAddr.sin_family = AF_INET;
   if (hostInfo) {
     memcpy( (char *)&cAddr.sin_addr, hostInfo->h_addr, hostInfo->h_length );
   }
   else {
-#ifdef WIN32
-    cAddr.sin_addr.s_addr = saddr;
-#else
     cAddr.sin_addr.s_addr = (in_addr_t)saddr;
-#endif
   }
+  
   cAddr.sin_port = htons( PYRIDE_CONTROL_PORT );
+#endif
 
   ClientItem * client = this->createTCPTalker( cAddr );
   if (client) {
@@ -1281,7 +1300,7 @@ void PyRideNetComm::processConsoleCommand( ClientItem * client, int subcommand, 
         if (client->activeVideoObj->start( client->addr, PYRIDE_VIDEO_STREAM_BASE_PORT )) {
           client->pushImage = true;
           if (client->activeAudioObj) {
-            client->activeAudioObj->start( client->addr, PYRIDE_VIDEO_STREAM_BASE_PORT + 2);
+            client->activeAudioObj->start( client->addr, PYRIDE_VIDEO_STREAM_BASE_PORT + 2 );
           }
         }
       }
@@ -1326,7 +1345,7 @@ void PyRideNetComm::processConsoleCommand( ClientItem * client, int subcommand, 
       break;
     case CUSTOM_COMMAND:
       if (dataLen >= 1 && pDataHandler_) {
-        // more hacks to enable execlusive robot control
+        // more hacks to enable exclusive robot control
         unsigned char retData[2];
         PyRideExtendedCommand cmd = (PyRideExtendedCommand) commandData[0];
         retData[0] = cmd;

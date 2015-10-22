@@ -23,7 +23,7 @@ Assuming ```brew``` is in use, you need to install ```openssl``` and ```jpeg``` 
 **NOTE:** source code for ```ccRtp``` and ```commoncpp2``` can be downloaded [here](http://ftp.gnu.org/gnu/ccrtp/ccrtp-1.8.0.tar.gz) and [here](https://ftp.gnu.org/gnu/commoncpp/commoncpp2-1.8.1.tar.gz) respectively. Follow their INSTALL manual to compile the libraries. Make sure you compile and install ```commoncpp2``` library first.
 
 **On Windows**
-You need first install Microsoft VC++ for python in addition to Visual Studio. Since compiling the required third-party libraries is particular tricky on Windows. We have a precompiled binaries that you can use immediately. Simply download [this package](http://experimentdata.themagiclab.org/static/pyride_client_thirdparty_windows.zip) and extract the package under under the repository.
+You need first install Microsoft VC++ for python in addition to Visual Studio. Since compiling the required third-party libraries is particular tricky on Windows. We have a precompiled binaries that you can use immediately. Simply download [this package](http://experimentdata.themagiclab.org/static/pyride_clients/pyride_client_thirdparty_windows.zip) and extract the package under under the repository.
 
 ### Compile source code
 Open a terminal (on Windows platform use VS20XX command prompt) and change the working directory to ```Python``` subdirectory. Execute the following build command:
@@ -71,3 +71,26 @@ pyride_remote.enable_telemery() # to receive messages from PyRIDE server
 pyride_remote.disable_telemery() # stop receiving messages from PyRIDE server
 # pyride_remote.onRobotTelemetryStatus is called when the client starts or stops receiving messages from the server.
 ```
+
+## TiN(Remote): a client utility tool
+**TiN(Remote)** is a simple utility tool that has been developed to validate and demonstrate the capabilities of PyRIDE client server infrastructure. It is a remote client that can retrieve real-time video and audio data feeds from a PyRIDE server. TiN can issue simple text to the robot's Text-to-Speech system, allowing it speak on behalf of the client. Finally, TiN can remote control both head and body movement of the connected robot.
+
+<img src="https://cloud.githubusercontent.com/assets/6646691/10659064/9251e944-78e8-11e5-88ef-3290278de13b.png" width="400">
+
+**Figure 1. TiN Remote Login Windows.**
+
+Again, you need a valid access code in order to connect to the PyRIDE server (See Figure 1). Once connected, you can click the ```play``` button in the middle of the screen to initiate video and audio streaming. If the robot is configured with multiple cameras, you will be able to see  ```< >``` buttons that allow you to switch between the cameras. While video is streaming, you can control the robot head movement by double clicking the image area.
+
+<img src="https://cloud.githubusercontent.com/assets/6646691/10659068/96dc9cac-78e8-11e5-9d12-3e2a446400cd.png"
+width="500">
+
+**Figure 2. TiN Main Console.**
+
+Type any text into the textbox and press ```RETURN``` key will send the text to the robot to speak. Click the ```Body Motion``` checkbox will bring up a set of arrow buttons that allow you to move the robot forward, backward, turn left and right. **NOTE** Clicking the ```Body Motion``` checkbox will take the exclusive control of the robot. Other connected remote client will not be able to perform any task on the robot except the text to speech and head movement. PyRIDE server can override you exclusive control anytime. When your client lose or unable to gain exclusive control of the robot (because another client has taken the control), the ```Body Motion``` checkbox will turn to grey.
+
+### Client binary download and installation
+Click the following link to download TiN(Remote) for your platform.
+
+* [Windows x64 Installer](http://experimentdata.themagiclab.org/static/pyride_clients/TiNSetup.exe) Double click the TiNSetup.exe.
+* [OS X 10.11 Binary](http://experimentdata.themagiclab.org/static/pyride_clients/TiN_OSX.zip). Unzip ```TiN_OSX.zip``` and move the app into ```Application``` folder.
+* [Linux Ubuntu 12.04 Debian package](http://experimentdata.themagiclab.org/static/pyride_clients/TiN_Ubuntu_12.04.deb). Run ```sudo dpkg -i TiN_Ubuntu_12.04.debian```.

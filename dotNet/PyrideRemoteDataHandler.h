@@ -1,5 +1,4 @@
 #pragma once
-#include <msclr\auto_gcroot.h>
 #include "ConsoleDataProcessor.h"
 
 using namespace pyride;

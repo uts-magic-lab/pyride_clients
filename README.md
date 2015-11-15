@@ -91,6 +91,6 @@ Type any text into the textbox and press ```RETURN``` key will send the text to 
 ### Client binary download and installation
 Click the following link to download TiNRemote for your platform.
 
-* [Windows x64 Installer](http://experimentdata.themagiclab.org/static/pyride_clients/TiNRemote_Windows_Setup.exe) Double click the TiNRemote_Windows_Setup.exe.
+* [Windows x64 Installer](http://experimentdata.themagiclab.org/static/pyride_clients/TiNRemote_Windows_Setup.exe) Double click the TiNRemote_Windows_Setup.exe. Require [Microsoft SQL Server Compact](https://www.microsoft.com/en-us/download/details.aspx?id=17876) installed.
 * [OS X 10.11 Binary](http://experimentdata.themagiclab.org/static/pyride_clients/TiNRemote_OSX.zip). Unzip ```TiNRemote_OSX.zip``` and move the app into ```Application``` folder.
 * [Linux Ubuntu 12.04 Debian package](http://experimentdata.themagiclab.org/static/pyride_clients/TiNRemote_Ubuntu_12.04.deb). Run ```sudo dpkg -i TiNRemote_Ubuntu_12.04.debian```.

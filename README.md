@@ -1,9 +1,9 @@
 # PyRIDE Remote Client Components (pyride_clients)
-## Introduction
+## pyride_remote: a Python extension module
 This repository contains client components that can be used to remotely access PyRIDE 'server' running on a PR2 or NAO robot. Details on PyRIDE can be found at https://github.com/uts-magic-lab/pyride_pr2. Currently, only Python extension module *pyride_remote* is released under this repository. One can use this module to build Python based client applications and services to remote control and monitor PR2 or NAO robots through PyRIDE middleware. This README file gives a quick introduction on how one may compile and use *pyride_remote* module.
 
-## Installation
-### Prerequisites
+### Installation
+#### Prerequisites
 *pyride_remote* by default can be compiled and run on Windows, Linux and OS X platforms. It only requires standard Python 2.7.x installation and the latest C/C++ compiler toolchains for the underlying platform and OpenSSL development library.
 
 Additional third-party libraries (ccRtp and jpeg) are required, if you need *pyride_remote* to able to retrieve real-time video image data feed from the robot cameras through PyRIDE 'server'. **NOTE:** This feature is only fully tested on Ubuntu Linux.
@@ -37,8 +37,8 @@ python pyride_remote_setup.py install
 ```
 You may require the admin privilege to install.
 
-## Basic *pyride_remote* usages
-### Import and connect to PyRIDE
+### Basic usages
+#### Import and connect to PyRIDE
 ```python
 import pyride_remote
 # access code is the password assigned to you
@@ -72,12 +72,12 @@ pyride_remote.disable_telemery() # stop receiving messages from PyRIDE server
 # pyride_remote.onRobotTelemetryStatus is called when the client starts or stops receiving messages from the server.
 ```
 
-## TiNRemote: a client utility tool
-**TiNRemote** is a simple utility tool that has been developed to validate and demonstrate the capabilities of PyRIDE client server infrastructure. It is a remote client that can retrieve real-time video and audio data feeds from a PyRIDE server. TiN can issue simple text to the robot's Text-to-Speech system, allowing it speak on behalf of the client. Finally, TiN can remote control both head and body movement of the connected robot.
+## TiNRemote: a client utility
+**TiNRemote** is a utility tool that has been developed to validate and demonstrate the capabilities of PyRIDE client server infrastructure. It is a simple remote client that can retrieve real-time video and audio data feeds from a PyRIDE robot server. TiNRemote can issue text messages to the robot's Text-to-Speech system, allowing the robot to speak on behalf of the client. Finally, TiNRemote can remote control both head and body movement of the connected robot. TiNRemote is available on OS X, Windows and Linux. There is also an iOS version of TinRemote available in [AppStore](https://itunes.apple.com/au/app/tinremote/id1057118291?mt=8) with slightly different functionalities. Its user instructions is [here](#ios).
 
 <img src="https://cloud.githubusercontent.com/assets/6646691/10659064/9251e944-78e8-11e5-88ef-3290278de13b.png" width="400">
 
-**Figure 1. TiNRemote Login Windows.**
+**Figure 1. TiNRemote Login.**
 
 Again, you need a valid access code in order to connect to the PyRIDE server (See Figure 1). Once connected, you can click the ```play``` button in the middle of the screen to initiate video and audio streaming. If the robot is configured with multiple cameras, you will be able to see  ```< >``` buttons that allow you to switch between the cameras. While video is streaming, you can control the robot head movement by double clicking the image area.
 
@@ -92,5 +92,36 @@ Type any text into the textbox and press ```RETURN``` key will send the text to 
 Click the following link to download TiNRemote for your platform.
 
 * [Windows x64 Installer](http://experimentdata.themagiclab.org/static/pyride_clients/TiNRemote_Windows_Setup.exe) Double click the TiNRemote_Windows_Setup.exe. Require [Microsoft SQL Server Compact](https://www.microsoft.com/en-us/download/details.aspx?id=17876) installed.
-* [OS X 10.11 Binary](http://experimentdata.themagiclab.org/static/pyride_clients/TiNRemote_OSX.zip). Unzip ```TiNRemote_OSX.zip``` and move the app into ```Application``` folder.
+* [OS X AppStore](https://itunes.apple.com/au/app/tinremote/id1050361034?mt=12).
 * [Linux Ubuntu 12.04 Debian package](http://experimentdata.themagiclab.org/static/pyride_clients/TiNRemote_Ubuntu_12.04.deb). Run ```sudo dpkg -i TiNRemote_Ubuntu_12.04.debian```.
+
+### <a name="ios"></a>TiNRemote for iOS
+TiNRemote for iOS has slightly different functionalities compared with TiNRemote for PCs. Once you start the app, tap the **TiN** icon to bring up the login dialogue box shown in Figure 3.
+
+<img src="https://cloud.githubusercontent.com/assets/6646691/13273581/a0ed258c-daf8-11e5-84b7-03984ee75f42.png"
+width="250">
+
+**Figure 3. TiNRemote for iOS Login.**
+
+Enter the IP address of the robot and a valid access code. **NOTE:** If you have already successfully used TiNRemote for iOS to access a number of robot PyRIDE servers, the app will bring up a list of robot PyRIDE servers that have been used previously.
+
+Once you have successfully logged into the server, the main console is shown as in Figure 4.
+
+<img src="https://cloud.githubusercontent.com/assets/6646691/13275579/b1fd1604-db0a-11e5-859a-137ebe8b5794.png"
+width="600">
+
+**Figure 4. TiNRemote for iOS main screen.**
+
+Tap play button to start or pause real-time image streaming from (one of) robot camera(s). If the robot is equipped with multiple cameras, tap next or previous camera button to switch streaming between cameras. Tap the Text-to-Speech button to bring up a text field windows for entering text to the robot. The top middle icon indicates whether the app client can gain exclusive control of the robot. Its disappearance means you cannot remotely control the robot. Tap exit button to log out of the robot PyRIDE server.
+
+#### Remote robot control
+If the exclusive control indicator is present, you can remotely drive the robot. Put three fingers along the middle of the screen and long press for three seconds, a circular control display will appear (Figure 5):
+
+<img src="https://cloud.githubusercontent.com/assets/6646691/13275806/fd5a0218-db0c-11e5-9772-0a3057301184.png"
+width="600">
+
+**Figure 5. TiNRemote for iOS remote control drive display.**
+
+Three fingers long press for three seconds again will disable remote control drive. While the remote control drive is enabled, one finger press and move of the inner circle, similar to moving a joystick will drive the robot to the desired direction and speed. Press left/right turn button to turn the robot left or right respectively.
+
+While real-time images are streaming from a robot head camera, you can move the robot head by double tapping the point on the video display where you want robot head point to. **DONOT** double tap again until the robot head movement is completed.

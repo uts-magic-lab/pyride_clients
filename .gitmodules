@@ -1,0 +1,3 @@
+[submodule "pyride_core"]
+	path = pyride_core
+	url = https://github.com/uts-magic-lab/pyride_core

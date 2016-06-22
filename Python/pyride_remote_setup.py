@@ -21,16 +21,16 @@ BIG_ENDIAN_ARCH = [ 'sparc', 'powerpc', 'ppc' ]
 macro = [ ('PYRIDE_REMOTE_CLIENT', None), ('USE_ENCRYPTION', None),
          ('NO_AUTO_DISCOVERY', None) ]
 
-src_code = ['RemotePyModule.cpp', 'RemoteDataHandler.cpp', '../Common/PyRideNetComm.cpp',
-            '../Common/ConsoleDataProcessor.cpp', '../Common/PyRideCommon.cpp']
-inc_dirs = ['../Common']
+src_code = ['RemotePyModule.cpp', 'RemoteDataHandler.cpp', '../pyride_core/PyRideNetComm.cpp',
+            '../pyride_core/ConsoleDataProcessor.cpp', '../pyride_core/PyRideCommon.cpp']
+inc_dirs = ['../pyride_core']
 lib = []
 link_args = []
 lib_dirs = []
 
 if with_video_data:
   macro.append(('WITH_VIDEO_DATA', None))
-  src_code = src_code + ['VideoStreamController.cpp', '../Common/RTPDataReceiver.cpp']
+  src_code = src_code + ['VideoStreamController.cpp', '../pyride_core/RTPDataReceiver.cpp']
 
 osname = os.name
 if osname == 'nt':

@@ -37,6 +37,12 @@ python pyride_remote_setup.py install
 ```
 You may require the admin privilege to install.
 
+To enable real-time image streamming, set WITH_VIDEO_DATA environment variable before compiling the Python extension module. For example,
+
+```
+export WITH_VIDEO_DATA = 1
+```
+
 ### Basic usages
 #### Import and connect to PyRIDE
 ```python
@@ -70,6 +76,27 @@ pyride_remote.issue_command( cmd_id, cmd_string )
 pyride_remote.enable_telemery() # to receive messages from PyRIDE server
 pyride_remote.disable_telemery() # stop receiving messages from PyRIDE server
 # pyride_remote.onRobotTelemetryStatus is called when the client starts or stops receiving messages from the server.
+```
+### Receive real-time image data from PyRIDE (for OpenCV image processing)
+Real-time image data is provided through callback mechanism. You need to define a callback function that takes a raw image data byte array. *pyride_remote* does not receive live image data by default, you need to enable the service by providing the callback function to ```pyride_remote.register_image_data``` method call.
+
+```
+import cv2 as cv
+import numpy as np
+import pyride_remote as pr
+
+cv.startWindowThread()
+cv.namedWindow( 'preview' )
+
+def imagedata( data ):
+  img = np.array( data ).reshape( 480, 640, 3 )
+  cv.imshow( 'preview', img )
+
+pr.connect( 'pyride_server', 'authentication_code' )
+pr.register_image_data( imagedata, True ) #second parameter ensure the received (jpeg) image data is decoded to raw pixel data.
+
+#stop receive image data from PyRIDE server with the following
+#pr.register_image_data( None )
 ```
 
 ## TiNRemote: a client utility

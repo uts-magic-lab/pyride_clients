@@ -57,6 +57,7 @@ pyride_remote.disconnect()
 ```
 ### Issue custom command to PyRIDE
 Before the client can issue commands to PyRIDE server, it must first to take the exclusive control of the PyRIDE. Only one client can take the control of the server at a time.
+
 ```python
 pyride_remote.take_control()
 pyride_remote.has_control() # return True, when the client has the exclusive control of the PyRIDE server.
@@ -67,7 +68,8 @@ pyride_remote.release_control()
 pyride_remote.issue_command( cmd_id, cmd_string )
 # On the PyRIDE server side, onRemoteCommand callback will be executed with these two input arguments.
 ```
-**NOTE::** PyRIDE can revoke the exclusive control of a remote client at anytime. When the control right is revoked, ```pyride_remote.onRobotControlOverride``` will be called on the client.
+
+**NOTE:** PyRIDE can revoke the exclusive control of a remote client at anytime. When the control right is revoked, ```pyride_remote.onRobotControlOverride``` will be called on the client.
 
 ### Receive operational data from PyRIDE
 *pyride_remote* can receive real-time operational data broadcast message from PyRIDE. Currently, operational data is the only mechanism for PyRIDE server to send/broadcast messages back to its remote clients. When the client receives a message from the server, ```pyride_remote.onRobotOperationData``` callback will be invoked.
@@ -77,10 +79,11 @@ pyride_remote.enable_telemery() # to receive messages from PyRIDE server
 pyride_remote.disable_telemery() # stop receiving messages from PyRIDE server
 # pyride_remote.onRobotTelemetryStatus is called when the client starts or stops receiving messages from the server.
 ```
+
 ### Receive real-time image data from PyRIDE (for OpenCV image processing)
 Real-time image data is provided through callback mechanism. You need to define a callback function that takes a raw image data byte array. *pyride_remote* does not receive live image data by default, you need to enable the service by providing the callback function to ```pyride_remote.register_image_data``` method call.
 
-```
+```python
 import cv2 as cv
 import numpy as np
 import pyride_remote as pr
@@ -92,8 +95,8 @@ def imagedata( data ):
   img = np.array( data ).reshape( 480, 640, 3 )
   cv.imshow( 'preview', img )
 
-pr.connect( 'pyride_server', 'authentication_code' )
-pr.register_image_data( imagedata, True ) #second parameter ensure the received (jpeg) image data is decoded to raw pixel data.
+pr.connect( 'robot.ip.address', 'access code' )
+pr.register_image_data( imagedata, True ) #the second parameter ensures the received (jpeg) image data is decoded to raw pixel data.
 
 #stop receive image data from PyRIDE server with the following
 #pr.register_image_data( None )

@@ -348,11 +348,13 @@ void PyRideRemoteDataHandler::onVideoDataInput( const unsigned char * data, cons
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
 
-    PyObject * arg = Py_BuildValue( "(O)", PyByteArray_FromStringAndSize( (char*)data, (Py_ssize_t)dataSize ) );
+    PyObject * barray = PyByteArray_FromStringAndSize( (char*)data, (Py_ssize_t)dataSize );
+    PyObject * arg = Py_BuildValue( "(O)", barray );
 
     this->invokeCallback( imageDataCB_, arg );
 
     Py_DECREF( arg );
+    Py_DECREF( barray );
 
     PyGILState_Release( gstate );
   }

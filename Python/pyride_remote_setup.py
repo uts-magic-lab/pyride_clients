@@ -45,7 +45,7 @@ if osname == 'nt':
     lib = lib + ['ccext2', 'ccrtp1', 'ccgnu2', 'jpeg-static' ]
 elif osname == 'posix':
   if with_video_data:
-    lib = ['pthread', 'ccext2', 'ccrtp1', 'ccgnu2','crypto', 'jpeg']
+    lib = ['pthread', 'ucommon', 'commoncpp', 'ccrtp', 'crypto', 'jpeg']
   else:
     lib = ['pthread']
 

@@ -9,6 +9,8 @@
 
 namespace pyride_remote {
 
+std::vector<long> g_PyModuleTimerList;
+
 #ifdef WIN32
 unsigned __stdcall data_thread(void * proc)
 #else
@@ -28,6 +30,7 @@ PyRideRemoteDataHandler::PyRideRemoteDataHandler( PyObject * pyModule ) :
   robotID_( -1 ),
   activeCam_( -1 ),
   pendingCam_( -1 ),
+  heartbeatTimer_( -1 ),
   isTelemetryOn_( false ),
   hasExclusiveControl_( false ),
   canHaveExclusiveControl_( false ),
@@ -99,6 +102,13 @@ void PyRideRemoteDataHandler::onRobotCreated( const char cID, const int ipAddr, 
 #endif
   }
 
+  if (heartbeatTimer_ == -1) {
+    heartbeatTimer_ = ConsoleDataProcessor::instance()->addTimer( 0.1, -1, kHeartBeatWindow );
+  }
+  else {
+    ERROR_MSG( "heartbeat timer already exists!\n" );
+  }
+
   if (finalShutdown_)
     return;
 
@@ -135,6 +145,10 @@ void PyRideRemoteDataHandler::onRobotDestroyed( const char cID )
   cameraLabels_.clear();
   activeCam_ = -1;
 
+  if (heartbeatTimer_ != -1) {
+    ConsoleDataProcessor::instance()->delTimer( heartbeatTimer_ );
+    heartbeatTimer_ = -1;
+  }
   if (finalShutdown_)
     return;
 
@@ -302,6 +316,48 @@ void PyRideRemoteDataHandler::onExtendedCommandResponse( const char cID, const P
 
       PyGILState_Release( gstate );
     }
+  }
+}
+
+void PyRideRemoteDataHandler::onTimer( const long timerID )
+{
+  if (timerID == heartbeatTimer_) {
+    ConsoleDataProcessor::instance()->issueHeartBeat( robotID_ );
+    return;
+  }
+
+  if (!finalShutdown_) {
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+
+    PyObject * arg = Py_BuildValue( "(i)", timerID );
+
+    this->invokeCallback( "onTimer", arg );
+
+    Py_DECREF( arg );
+
+    PyGILState_Release( gstate );
+  }
+}
+
+void PyRideRemoteDataHandler::onTimerLapsed( const long timerID )
+{
+  if (timerID == heartbeatTimer_) {
+    // should not be here.
+    return;
+  }
+
+  if (!finalShutdown_) {
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+
+    PyObject * arg = Py_BuildValue( "(i)", timerID );
+
+    this->invokeCallback( "onTimerLapsed", arg );
+
+    Py_DECREF( arg );
+
+    PyGILState_Release( gstate );
   }
 }
 

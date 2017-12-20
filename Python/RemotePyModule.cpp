@@ -221,6 +221,141 @@ static PyObject * PyModule_GetSetActiveCamera( PyObject *self, PyObject * args )
   }
 }
 
+/** @name Timer Management Functions
+ *
+ */
+/**@{*/
+/*! \typedef addTimer(init_start, repeats, interval)
+ *  \brief Add a timer object
+ *  \param float init_start. Initial start time (in seconds, precision to 10th of a second) after the method is called.
+ *  \param long repeats. A number of times the timer shall be called. -1 means infinite.
+ *  \param float interval. Time interval (in seconds, precision to 10th of a second) between timer callbacks.
+ *  \return long The ID of the timer object.
+ */
+static PyObject * PyModule_AddTimer( PyObject * self, PyObject * args )
+{
+  float initTime;
+  long repeats = 0;
+  float interval = 1.0;
+
+  if (!PyArg_ParseTuple( args, "f|lf", &initTime, &repeats, &interval )) {
+    // PyArg_ParseTuple will set the error status.
+    return NULL;
+  }
+  if (initTime <= 0) {
+    PyErr_Format( PyExc_ValueError, "pyride_remote.addTimer: invalid initial invoking time."
+                 "The first argument must be greater than zero." );
+    return NULL;
+  }
+  long timerID = ConsoleDataProcessor::instance()->addTimer( initTime, repeats, interval );
+
+  g_PyModuleTimerList.push_back( timerID );
+
+  return Py_BuildValue( "l", timerID );
+}
+
+/*! \typedef removeTimer(timer_id)
+ *  \brief Remove a timer object.
+ *  \param long timer_id. ID of the timer object pending for removal.
+ *  \return None.
+ */
+static PyObject * PyModule_RemoveTimer( PyObject * self, PyObject * args )
+{
+  long timerID;
+
+  if (!PyArg_ParseTuple( args, "l", &timerID )) {
+    // PyArg_ParseTuple will set the error status.
+    return NULL;
+  }
+  if (timerID <= 0) {
+    PyErr_Format( PyExc_ValueError, "pyride_remote.removeTimer: invalid timer ID."
+                 "The ID must be greater than zero." );
+    return NULL;
+  }
+  bool found = false;
+  std::vector<long>::iterator iter;
+  for (iter = g_PyModuleTimerList.begin(); iter != g_PyModuleTimerList.end(); iter++) {
+    if (*iter == timerID) {
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    PyErr_Format( PyExc_ValueError, "pyride_remote.removeTimer: unknown timer ID %d.", (int)timerID );
+    return NULL;
+  }
+  g_PyModuleTimerList.erase( iter );
+  ConsoleDataProcessor::instance()->delTimer( timerID );
+
+  Py_RETURN_NONE;
+}
+
+/*! \typedef isTimerRunning(timer_id)
+ *  \brief Check whether a timer object is still alive.
+ *  \param long timer_id. ID of the timer object.
+ *  \return True = timer is alive; False = timer is dead.
+ */
+static PyObject * PyModule_IsTimerRunning( PyObject * self, PyObject * args )
+{
+  long timerID;
+
+  if (!PyArg_ParseTuple( args, "l", &timerID )) {
+    // PyArg_ParseTuple will set the error status.
+    return NULL;
+  }
+  if (timerID <= 0) {
+    PyErr_Format( PyExc_ValueError, "pyride_remote.isTimerRunning: invalid timer ID."
+                 "The ID must be greater than zero." );
+    return NULL;
+  }
+  if (ConsoleDataProcessor::instance()->isTimerRunning( timerID )) {
+    Py_RETURN_TRUE;
+  }
+  else {
+    Py_RETURN_FALSE;
+  }
+}
+
+/*! \typedef isTimerExecuting(timer_id)
+ *  \brief Check whether a timer object is in execution mode.
+ *  \param long timer_id. ID of the timer object.
+ *  \return True = timer is executing code; False = timer is in hibernation.
+ */
+static PyObject * PyModule_IsTimerExecuting( PyObject * self, PyObject * args )
+{
+  long timerID;
+
+  if (!PyArg_ParseTuple( args, "l", &timerID )) {
+    // PyArg_ParseTuple will set the error status.
+    return NULL;
+  }
+  if (timerID <= 0) {
+    PyErr_Format( PyExc_ValueError, "pyride_remote.isTimerExecuting: invalid timer ID."
+                 "The ID must be greater than zero." );
+    return NULL;
+  }
+  if (ConsoleDataProcessor::instance()->isTimerExecuting( timerID )) {
+    Py_RETURN_TRUE;
+  }
+  else {
+    Py_RETURN_FALSE;
+  }
+}
+
+/*! \typedef removeAllTimers()
+ *  \brief Remove all timer objects in the system.
+ *  \return None.
+ */
+/**@}*/
+static PyObject * PyModule_RemoveAllTimers( PyObject * self )
+{
+  for (size_t i = 0; i < g_PyModuleTimerList.size(); i++) {
+    ConsoleDataProcessor::instance()->delTimer( g_PyModuleTimerList[i] );
+  }
+  g_PyModuleTimerList.clear();
+  Py_RETURN_NONE;
+}
+
 #ifdef WITH_VIDEO_DATA
 static PyObject * PyModule_RegisterImageData( PyObject * self, PyObject * args )
 {
@@ -317,6 +452,16 @@ static PyMethodDef PyModule_methods[] = {
     "Return a list of cameras on the robot." },
   { "active_camera", (PyCFunction)PyModule_GetSetActiveCamera, METH_VARARGS,
     "get (or set) the active camera on the robot." },
+  { "addTimer", (PyCFunction)PyModule_AddTimer, METH_VARARGS,
+    "Add a new timer object." },
+  { "isTimerRunning", (PyCFunction)PyModule_IsTimerRunning, METH_VARARGS,
+    "Check a timer with ID is still running." },
+  { "isTimerExecuting", (PyCFunction)PyModule_IsTimerExecuting, METH_VARARGS,
+    "Check a timer with ID is still executing." },
+  { "removeTimer", (PyCFunction)PyModule_RemoveTimer, METH_VARARGS,
+    "Remove a timer object with ID." },
+  { "removeAllTimers", (PyCFunction)PyModule_RemoveAllTimers, METH_NOARGS,
+    "Remove all timer objects." },
 #ifdef WITH_VIDEO_DATA
   { "register_image_data", (PyCFunction)PyModule_RegisterImageData, METH_VARARGS,
     "Register (or deregister) a callback function to get image data from the active robot camera." },

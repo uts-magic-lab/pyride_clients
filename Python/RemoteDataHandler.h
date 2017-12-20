@@ -26,6 +26,8 @@
 
 namespace pyride_remote {
 
+extern std::vector<long> g_PyModuleTimerList;
+
 class PyRideRemoteDataHandler : public PyRideConsoleCommandHandler
 #ifdef WITH_VIDEO_DATA
 , VideoStreamControllerDelegate
@@ -69,6 +71,9 @@ protected:
                                  const unsigned char * optionalData = NULL,
                                  const int optionalDataLength = 0 );
 
+  void onTimer( const long timerID );
+  void onTimerLapsed( const long timerID );
+
 #ifdef WITH_VIDEO_DATA
   void onVideoDataInput( const unsigned char * data, const int dataSize );
 #endif
@@ -82,6 +87,7 @@ private:
   int robotID_;
   int activeCam_;
   int pendingCam_;
+  long heartbeatTimer_;
   std::vector<std::string> cameraLabels_;
   bool isTelemetryOn_;
   bool hasExclusiveControl_;
